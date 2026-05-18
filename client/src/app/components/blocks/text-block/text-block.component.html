@@ -1,0 +1,34 @@
+<h1
+  *ngIf="variant === 'heading'; else paragraph"
+  [ngClass]="props.className"
+  [style.font-size]="props.fontSize"
+  [style.font-weight]="props.fontWeight"
+  [style.text-align]="props.textAlign"
+  [style.color]="props.color"
+  [style.padding]="props.padding"
+  [style.margin]="props.margin || '0'"
+  [style.line-height]="props.lineHeight"
+  [style.opacity]="props.opacity ?? 1"
+  [style.border]="props.border"
+  [style.box-shadow]="props.shadow"
+>
+  {{ props.content }}
+</h1>
+
+<ng-template #paragraph>
+  <p
+    [ngClass]="props.className"
+    [style.font-size]="props.fontSize"
+    [style.font-weight]="props.fontWeight"
+    [style.text-align]="props.textAlign"
+    [style.color]="props.color"
+    [style.padding]="props.padding"
+    [style.margin]="props.margin || '0'"
+    [style.line-height]="props.lineHeight"
+    [style.opacity]="props.opacity ?? 1"
+    [style.border]="props.border"
+    [style.box-shadow]="props.shadow"
+  >
+    {{ props.content }}
+  </p>
+</ng-template>

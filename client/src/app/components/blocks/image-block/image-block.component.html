@@ -1,0 +1,14 @@
+<img
+  [ngClass]="props.className"
+  [src]="props.src || 'https://placehold.co/800x400?text=Add+image+URL'"
+  [alt]="props.alt || 'Image block'"
+  [style.width]="props.width"
+  [style.height]="props.height"
+  [style.object-fit]="props.objectFit"
+  [style.border-radius]="props.borderRadius"
+  [style.padding]="props.padding"
+  [style.margin]="props.margin || '0'"
+  [style.opacity]="props.opacity ?? 1"
+  [style.border]="props.border"
+  [style.box-shadow]="props.shadow"
+/>
