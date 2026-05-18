@@ -90,10 +90,18 @@ export class AuthService {
   }
 
   loadUserFromStorage(): void {
-    if (!this.getToken()) return;
-    this.getMe().subscribe({
-      error: () => this.logout()
-    });
+    const token = this.getToken();
+    if (token) {
+      this.getMe().subscribe({
+        next: (user) => {
+          this.currentUser.set(user);
+        },
+        error: () => {
+          localStorage.removeItem('auth_token');
+          this.currentUser.set(null);
+        }
+      });
+    }
   }
 
   private handleAuth(res: AuthResponse): void {
