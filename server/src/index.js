@@ -272,3 +272,5 @@ process.once('SIGUSR2', () => {
     });
   });
 });
+
+module.exports = app;
