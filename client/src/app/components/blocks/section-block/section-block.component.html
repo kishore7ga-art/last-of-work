@@ -1,0 +1,54 @@
+<div 
+  class="section-block"
+  [class.has-video-bg]="props.videoBackground?.enabled"
+  [ngStyle]="sectionStyle()">
+  
+  <!-- VIDEO BACKGROUND (renders behind content) -->
+  @if (props.videoBackground?.enabled) {
+    <app-video-background
+      [video]="props.videoBackground!"
+      [isEditing]="isEditing">
+    </app-video-background>
+  }
+  
+  <!-- CONTENT OVERLAY (renders on top of video) -->
+  <div 
+    class="section-content"
+    [ngStyle]="contentStyle()">
+    <ng-content></ng-content>
+  </div>
+
+  <!-- EDITOR CANVAS FLOATING VIDEO CONTROLS -->
+  @if (isEditing && props.videoBackground?.enabled) {
+    <div class="video-canvas-controls" (click)="$event.stopPropagation()">
+      <button 
+        [title]="props.videoBackground?.autoplay ? 'Pause Preview' : 'Play Preview'" 
+        (click)="togglePlayPause($event)">
+        <lucide-icon [name]="props.videoBackground?.autoplay ? 'pause' : 'play'" [size]="14"></lucide-icon>
+      </button>
+
+      @if (props.videoBackground?.overlayEnabled) {
+        <div class="slider-wrapper">
+          <span>Opacity</span>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            [value]="props.videoBackground?.overlayOpacity"
+            (input)="updateOverlayOpacity($event)"
+            title="Adjust Overlay Opacity"
+          />
+          <span>{{ props.videoBackground?.overlayOpacity }}%</span>
+        </div>
+      }
+
+      <button 
+        class="danger"
+        title="Remove Video Background"
+        (click)="removeVideoBackground($event)">
+        <lucide-icon name="x" [size]="14"></lucide-icon>
+      </button>
+    </div>
+  }
+
+</div>

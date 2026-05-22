@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Local databases
+mongodb_data/
+
+# Log files
+*.log
+client/*.log
+server/*.log
+client/.codex-ng.log
+client/.codex-ng.err.log
+server/.codex-server.log
+server/.codex-server.err.log
+
+# Build & Compilation directories
+dist/
+client/dist/
+client/.angular/
+server/dist/
+
+# Secret / Environment files
+.env
+server/.env
+client/.env
+
+# Editors & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

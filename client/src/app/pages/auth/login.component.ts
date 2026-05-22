@@ -24,16 +24,7 @@ import { LucideAngularModule } from 'lucide-angular';
         </div>
 
         <form (ngSubmit)="onSubmit()" class="space-y-4">
-          <label class="block">
-            <span class="block text-sm font-medium text-gray-300 mb-1">Email</span>
-            <input
-              type="email"
-              [(ngModel)]="email"
-              name="email"
-              required
-              class="w-full bg-[#0a0a0f] border border-[#2a2a3d] rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="you@example.com" />
-          </label>
+
 
           <label class="block">
             <span class="block text-sm font-medium text-gray-300 mb-1">Password</span>
@@ -64,6 +55,20 @@ import { LucideAngularModule } from 'lucide-angular';
           </button>
         </form>
 
+        <div class="relative flex py-4 items-center">
+          <div class="flex-grow border-t border-[#2a2a3d]"></div>
+          <span class="flex-shrink mx-4 text-gray-500 text-xs font-semibold uppercase tracking-wider">Or</span>
+          <div class="flex-grow border-t border-[#2a2a3d]"></div>
+        </div>
+
+        <button
+          type="button"
+          routerLink="/editor/temp"
+          class="w-full h-11 bg-transparent hover:bg-white/5 border border-[#2a2a3d] hover:border-blue-500/50 text-gray-300 hover:text-white font-medium rounded-lg transition-colors flex justify-center items-center gap-2">
+          <lucide-icon name="arrow-right-circle" class="text-blue-400 animate-pulse" [size]="18"></lucide-icon>
+          <span>Bypass straight to Editor</span>
+        </button>
+
         <p class="text-center text-gray-400 text-sm mt-6">
           Don't have an account?
           <a routerLink="/register" class="text-blue-300 hover:text-blue-200">Register</a>
@@ -79,18 +84,17 @@ import { LucideAngularModule } from 'lucide-angular';
 export class LoginComponent {
   private authService = inject(AuthService);
 
-  email = '';
   password = '';
   showPassword = signal(false);
   loading = signal(false);
   error = signal('');
 
   onSubmit() {
-    if (!this.email || !this.password) return;
+    if (!this.password) return;
     this.loading.set(true);
     this.error.set('');
 
-    this.authService.login(this.email, this.password).subscribe({
+    this.authService.login('', this.password).subscribe({
       error: (err) => {
         this.error.set(err.error?.message || 'Login failed. Please check your details.');
         this.loading.set(false);

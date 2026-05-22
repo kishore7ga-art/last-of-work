@@ -34,14 +34,30 @@ export class ButtonBlockComponent {
   @Input() props!: BlockProps;
 
   getStyles() {
+    const p = this.props;
+    const useColors = p.useThemeColors !== false;
+    const useFonts = p.useThemeFonts !== false;
+    const useRadius = p.useThemeRadius !== false;
+
+    let bgColor = p.backgroundColor;
+    let color = p.color;
+
+    if (useColors && (!bgColor || bgColor === '#2563eb' || bgColor === '#3b82f6' || bgColor === '#4f6ef7' || bgColor === '#10b981')) {
+      bgColor = 'var(--theme-primary)';
+      color = 'var(--theme-button-text)';
+    } else if (useColors && (!color || color === '#ffffff')) {
+      color = 'var(--theme-button-text)';
+    }
+
     return {
-      'background-color': this.props.backgroundColor,
-      'color': this.props.color,
-      'font-size': this.props.fontSize,
-      'font-weight': this.props.fontWeight,
-      'padding': this.props.padding,
-      'margin': this.props.margin,
-      'border-radius': this.props.borderRadius
+      'background-color': bgColor,
+      'color': color,
+      'font-family': useFonts ? 'var(--theme-font-body)' : undefined,
+      'font-size': p.fontSize,
+      'font-weight': p.fontWeight,
+      'padding': p.padding,
+      'margin': p.margin,
+      'border-radius': useRadius && (!p.borderRadius || p.borderRadius === '6px' || p.borderRadius === '8px') ? 'var(--theme-radius-btn)' : p.borderRadius
     };
   }
 }

@@ -7,7 +7,7 @@ router.use(protect);
 
 router.get('/', async (req, res, next) => {
   try {
-    const components = await Component.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const components = await Component.find({}).sort({ createdAt: -1 });
     res.status(200).json({ success: true, components });
   } catch (error) {
     next(error);
@@ -38,7 +38,7 @@ router.post('/', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const component = await Component.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+    const component = await Component.findOneAndDelete({ _id: req.params.id });
     
     if (!component) {
       return res.status(404).json({ success: false, message: 'Component not found' });

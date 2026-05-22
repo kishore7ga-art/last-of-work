@@ -1,0 +1,195 @@
+<div class="canvas-area"
+  [class.mobile-mode]="isMobileView()"
+  [class.tablet-mode]="store.previewMode() === 'tablet'"
+  (click)="onCanvasClick($event)">
+  
+  <!-- CANVAS INFO BAR -->
+  <div class="canvas-info-bar">
+    <span class="device-label">
+      @if (isMobileView()) { 📱 Mobile • 390px }
+      @else if (store.previewMode() === 'tablet') { ⬜ Tablet • 768px } 
+      @else { 🖥 Desktop • 1200px }
+    </span>
+    @if (store.editMode() === 'mobile') {
+      <span class="edit-mode-badge mobile">
+        ● Editing Mobile
+      </span>
+    }
+  </div>
+
+  <!-- PHONE FRAME (mobile only) -->
+  @if (isMobileView()) {
+    <div class="phone-frame-wrapper">
+      <div class="phone-frame">
+        
+        <!-- Phone top notch -->
+        <div class="phone-top">
+          <div class="phone-notch"></div>
+        </div>
+        
+        <!-- Phone screen -->
+        <div class="phone-screen">
+          <div class="phone-content"
+            [cdkDropListData]="store.blocks()"
+            cdkDropList
+            (cdkDropListDropped)="onBlockDrop($event)">
+            
+            @if (store.blocks().length === 0) {
+              <div class="mobile-empty">
+                <p>Add blocks to see mobile view</p>
+              </div>
+            }
+            
+            @for (block of store.blocks(); track block.id; let i = $index) {
+              @if (block.visibility?.mobile !== false) {
+                <div cdkDrag
+                  [cdkDragData]="block"
+                  [id]="'block-' + block.id"
+                  class="mobile-block">
+                  
+                  <app-block-wrapper
+                    [block]="block"
+                    [id]="'block-' + block.id"
+                    [mbAnimate]="block.animation"
+                    [isMobile]="true">
+                    
+                    <div class="block-render" [ngSwitch]="block.type">
+                      <app-text-block *ngSwitchCase="'text'" [props]="getMobileProps(block)" [blockId]="block.id" [isHeading]="false"></app-text-block>
+                      <app-text-block *ngSwitchCase="'heading'" [props]="getMobileProps(block)" [blockId]="block.id" [isHeading]="true"></app-text-block>
+                      <app-image-block *ngSwitchCase="'image'" [props]="getMobileProps(block)" loading="lazy" decoding="async"></app-image-block>
+                      <app-button-block *ngSwitchCase="'button'" [props]="getMobileProps(block)"></app-button-block>
+                      <app-divider-block *ngSwitchCase="'divider'" [props]="getMobileProps(block)"></app-divider-block>
+                      <app-spacer-block *ngSwitchCase="'spacer'" [props]="getMobileProps(block)"></app-spacer-block>
+                      <app-video-block *ngSwitchCase="'video'" [props]="getMobileProps(block)"></app-video-block>
+                      <app-columns-block *ngSwitchCase="'columns'" [props]="getMobileProps(block)"></app-columns-block>
+                      <app-card-block *ngSwitchCase="'card'" [props]="getMobileProps(block)"></app-card-block>
+                      <app-form-block *ngSwitchCase="'form'" [props]="getMobileProps(block)"></app-form-block>
+                      <app-icon-block *ngSwitchCase="'icon'" [props]="getMobileProps(block)"></app-icon-block>
+                      <app-html-block *ngSwitchCase="'html'" [props]="getMobileProps(block)"></app-html-block>
+                      <app-map-block *ngSwitchCase="'map'" [props]="getMobileProps(block)"></app-map-block>
+                      <input *ngSwitchCase="'input'" [type]="getMobileProps(block)['inputType'] || 'text'" [placeholder]="getMobileProps(block)['placeholder'] || 'Enter text...'" [ngStyle]="getInputStyles(block)" />
+                      
+                      <app-section-block *ngSwitchCase="'section'" [props]="getMobileProps(block)" [blockId]="block.id" [isEditing]="true">
+                        @if (block.children && block.children.length > 0) {
+                          @for (child of block.children; track child.id) {
+                            <div [ngSwitch]="child.type" class="section-nested-child">
+                              <app-text-block *ngSwitchCase="'text'" [props]="getMobileProps(child)" [blockId]="child.id" [isHeading]="false"></app-text-block>
+                              <app-text-block *ngSwitchCase="'heading'" [props]="getMobileProps(child)" [blockId]="child.id" [isHeading]="true"></app-text-block>
+                              <app-image-block *ngSwitchCase="'image'" [props]="getMobileProps(child)" loading="lazy" decoding="async"></app-image-block>
+                              <app-button-block *ngSwitchCase="'button'" [props]="getMobileProps(child)"></app-button-block>
+                              <app-divider-block *ngSwitchCase="'divider'" [props]="getMobileProps(child)"></app-divider-block>
+                              <app-spacer-block *ngSwitchCase="'spacer'" [props]="getMobileProps(child)"></app-spacer-block>
+                              <app-video-block *ngSwitchCase="'video'" [props]="getMobileProps(child)"></app-video-block>
+                              <app-icon-block *ngSwitchCase="'icon'" [props]="getMobileProps(child)"></app-icon-block>
+                              <app-html-block *ngSwitchCase="'html'" [props]="getMobileProps(child)"></app-html-block>
+                              <app-map-block *ngSwitchCase="'map'" [props]="getMobileProps(child)"></app-map-block>
+                              <input *ngSwitchCase="'input'" [type]="getMobileProps(child)['inputType'] || 'text'" [placeholder]="getMobileProps(child)['placeholder'] || 'Enter text...'" [ngStyle]="getInputStyles(child)" />
+                            </div>
+                          }
+                        }
+                      </app-section-block>
+                    </div>
+
+                  </app-block-wrapper>
+                  
+                </div>
+              } @else {
+                <!-- Hidden on mobile indicator -->
+                <div class="hidden-mobile-indicator">
+                  <span>👁 Hidden on mobile</span>
+                </div>
+              }
+            }
+          </div>
+        </div>
+        
+        <!-- Phone bottom -->
+        <div class="phone-bottom">
+          <div class="phone-home-bar"></div>
+        </div>
+        
+      </div>
+    </div>
+    
+  } @else {
+    <!-- DESKTOP/TABLET CANVAS -->
+    <div class="canvas-page-wrapper">
+      <div class="canvas-page"
+        [style.width.px]="canvasWidth()"
+        id="canvas-drop-list"
+        cdkDropList
+        [cdkDropListData]="store.blocks()"
+        (cdkDropListDropped)="onBlockDrop($event)"
+        (click)="$event.stopPropagation()">
+        
+        @if (store.blocks().length === 0) {
+          <div class="canvas-empty">
+            <lucide-icon name="mouse-pointer-click" [size]="40" class="empty-icon"></lucide-icon>
+            <p>Click blocks or drag templates here</p>
+          </div>
+        }
+        
+        @for (block of store.blocks(); track block.id; let i = $index) {
+          <div cdkDrag
+            [cdkDragData]="block"
+            [id]="'block-' + block.id"
+            class="block-drag-item">
+            
+            <div *cdkDragPreview class="drag-preview">
+              {{ block.type | titlecase }}
+            </div>
+            
+            <div *cdkDragPlaceholder class="drop-placeholder"></div>
+            
+            <app-block-wrapper
+              [block]="block"
+              [id]="'block-' + block.id"
+              [mbAnimate]="block.animation">
+              
+              <span cdkDragHandle class="drag-handle">⠿</span>
+              
+              <div class="block-render" [ngSwitch]="block.type">
+                <app-text-block *ngSwitchCase="'text'" [props]="store.getActiveProps(block)" [blockId]="block.id" [isHeading]="false"></app-text-block>
+                <app-text-block *ngSwitchCase="'heading'" [props]="store.getActiveProps(block)" [blockId]="block.id" [isHeading]="true"></app-text-block>
+                <app-image-block *ngSwitchCase="'image'" [props]="store.getActiveProps(block)" loading="lazy" decoding="async"></app-image-block>
+                <app-button-block *ngSwitchCase="'button'" [props]="store.getActiveProps(block)"></app-button-block>
+                <app-divider-block *ngSwitchCase="'divider'" [props]="store.getActiveProps(block)"></app-divider-block>
+                <app-spacer-block *ngSwitchCase="'spacer'" [props]="store.getActiveProps(block)"></app-spacer-block>
+                <app-video-block *ngSwitchCase="'video'" [props]="store.getActiveProps(block)"></app-video-block>
+                <app-columns-block *ngSwitchCase="'columns'" [props]="store.getActiveProps(block)"></app-columns-block>
+                <app-card-block *ngSwitchCase="'card'" [props]="store.getActiveProps(block)"></app-card-block>
+                <app-form-block *ngSwitchCase="'form'" [props]="store.getActiveProps(block)"></app-form-block>
+                <app-icon-block *ngSwitchCase="'icon'" [props]="store.getActiveProps(block)"></app-icon-block>
+                <app-html-block *ngSwitchCase="'html'" [props]="store.getActiveProps(block)"></app-html-block>
+                <app-map-block *ngSwitchCase="'map'" [props]="store.getActiveProps(block)"></app-map-block>
+                <input *ngSwitchCase="'input'" [type]="store.getActiveProps(block)['inputType'] || 'text'" [placeholder]="store.getActiveProps(block)['placeholder'] || 'Enter text...'" [ngStyle]="getInputStyles(block)" />
+                
+                <app-section-block *ngSwitchCase="'section'" [props]="store.getActiveProps(block)" [blockId]="block.id" [isEditing]="true">
+                  @if (block.children && block.children.length > 0) {
+                    @for (child of block.children; track child.id) {
+                      <div [ngSwitch]="child.type" class="section-nested-child">
+                        <app-text-block *ngSwitchCase="'text'" [props]="store.getActiveProps(child)" [blockId]="child.id" [isHeading]="false"></app-text-block>
+                        <app-text-block *ngSwitchCase="'heading'" [props]="store.getActiveProps(child)" [blockId]="child.id" [isHeading]="true"></app-text-block>
+                        <app-image-block *ngSwitchCase="'image'" [props]="store.getActiveProps(child)" loading="lazy" decoding="async"></app-image-block>
+                        <app-button-block *ngSwitchCase="'button'" [props]="store.getActiveProps(child)"></app-button-block>
+                        <app-divider-block *ngSwitchCase="'divider'" [props]="store.getActiveProps(child)"></app-divider-block>
+                        <app-spacer-block *ngSwitchCase="'spacer'" [props]="store.getActiveProps(child)"></app-spacer-block>
+                        <app-video-block *ngSwitchCase="'video'" [props]="store.getActiveProps(child)"></app-video-block>
+                        <app-icon-block *ngSwitchCase="'icon'" [props]="store.getActiveProps(child)"></app-icon-block>
+                        <app-html-block *ngSwitchCase="'html'" [props]="store.getActiveProps(child)"></app-html-block>
+                        <app-map-block *ngSwitchCase="'map'" [props]="store.getActiveProps(child)"></app-map-block>
+                        <input *ngSwitchCase="'input'" [type]="store.getActiveProps(child)['inputType'] || 'text'" [placeholder]="store.getActiveProps(child)['placeholder'] || 'Enter text...'" [ngStyle]="getInputStyles(child)" />
+                      </div>
+                    }
+                  }
+                </app-section-block>
+              </div>
+              
+            </app-block-wrapper>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div>

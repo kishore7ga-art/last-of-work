@@ -1,6 +1,6 @@
-export type BlockType = 'text' | 'heading' | 'image' | 'button' | 'section' | 'divider' | 'spacer' | 'video' | 'columns' | 'card' | 'form' | 'input' | 'icon' | 'html' | 'map';
+import { BlockAnimation } from '../models/animation.models';
 
-export type AnimationType = 'none' | 'fadeIn' | 'slideUp' | 'slideLeft' | 'zoomIn' | 'bounce';
+export type BlockType = 'text' | 'heading' | 'image' | 'button' | 'section' | 'divider' | 'spacer' | 'video' | 'columns' | 'card' | 'form' | 'input' | 'icon' | 'html' | 'map';
 
 export interface BlockProps {
   // Text props
@@ -52,19 +52,95 @@ export interface BlockProps {
   display?: string;
   minHeight?: string;
 
-  // Animation props
-  animation?: AnimationType;
-  animationDelay?: number;
-  animationDuration?: number;
+  // NEW responsive props
+  mobileHide?: boolean;
+  mobileFontSize?: string;
+  mobilePadding?: string;
+  mobileMargin?: string;
+  mobileTextAlign?: string;
+  mobileWidth?: string;
+  mobileDisplay?: string;
+  mobileFlexDirection?: string;
+  mobileGridColumns?: string;
+
+  // Theme settings
+  useThemeColors?: boolean;
+  useThemeFonts?: boolean;
+  useThemeRadius?: boolean;
+
+  videoBackground?: VideoBackground;
+  [key: string]: any;
+}
+
+export interface VideoBackground {
+  enabled: boolean;
+  type: 'youtube' | 'mp4' | 'none';
+  
+  // Video source
+  youtubeUrl: string;
+  youtubeId: string;
+  mp4Url: string;
+  
+  // Playback settings
+  autoplay: boolean;
+  loop: boolean;
+  muted: boolean;
+  startTime: number;
+  playbackSpeed: number;
+  
+  // Overlay settings
+  overlayEnabled: boolean;
+  overlayColor: string;
+  overlayOpacity: number;
+  overlayBlur: number;
+  
+  // Fallback
+  fallbackImage: string;
+  mobileFallbackImage: string;
+  
+  // Display
+  objectFit?: 'cover' | 'contain';
+  position?: string;
+}
+
+export function getDefaultVideoBackground(): VideoBackground {
+  return {
+    enabled: false,
+    type: 'none',
+    youtubeUrl: '',
+    youtubeId: '',
+    mp4Url: '',
+    autoplay: true,
+    loop: true,
+    muted: true,
+    startTime: 0,
+    playbackSpeed: 1,
+    overlayEnabled: true,
+    overlayColor: '#000000',
+    overlayOpacity: 40,
+    overlayBlur: 0,
+    fallbackImage: '',
+    mobileFallbackImage: '',
+    objectFit: 'cover',
+    position: 'center center'
+  };
 }
 
 export interface CanvasBlock {
   id: string;
   type: BlockType;
   props: BlockProps;
+  mobileProps?: BlockProps | null;
+  visibility?: {
+    desktop: boolean;
+    mobile: boolean;
+    tablet: boolean;
+  };
+  mobileOrder?: number | null;
   children?: CanvasBlock[];
   locked?: boolean;
   hidden?: boolean;
+  animation?: BlockAnimation;
 }
 
 export interface SavedComponent {

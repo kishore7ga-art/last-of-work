@@ -54,14 +54,34 @@ export class TextBlockComponent {
   editValue = '';
 
   getStyles() {
+    const p = this.props;
+    const useColors = p.useThemeColors !== false;
+    const useFonts = p.useThemeFonts !== false;
+
+    let color = p.color;
+    if (useColors && (!color || color === '#111827' || color === '#1f2937' || color === '#4b5563' || color === '#6b7280' || color === '#9ca3af')) {
+      color = 'var(--theme-text)';
+    }
+
+    let fontFamily = undefined;
+    if (useFonts) {
+      fontFamily = this.isHeading ? 'var(--theme-font-heading)' : 'var(--theme-font-body)';
+    }
+
+    let fontWeight = p.fontWeight;
+    if (useFonts && this.isHeading && (!fontWeight || fontWeight === 'bold' || fontWeight === '700' || fontWeight === '800')) {
+      fontWeight = 'var(--theme-heading-weight)';
+    }
+
     return {
-      'font-size': this.props.fontSize,
-      'font-weight': this.props.fontWeight,
-      'text-align': this.props.textAlign,
-      'color': this.props.color,
-      'padding': this.props.padding,
-      'margin': this.props.margin,
-      'line-height': this.props.lineHeight
+      'font-family': fontFamily,
+      'font-size': p.fontSize,
+      'font-weight': fontWeight,
+      'text-align': p.textAlign,
+      'color': color,
+      'padding': p.padding,
+      'margin': p.margin,
+      'line-height': p.lineHeight
     };
   }
 

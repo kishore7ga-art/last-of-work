@@ -1,0 +1,817 @@
+/* =============================================
+   UNIQUE ANIMATIONS — Each feels completely 
+   different from others
+   ============================================= */
+
+/* ---------- FADE FAMILY ----------
+   Subtle opacity only — gentle entrance */
+
+@keyframes mb-fadeIn {
+  from { 
+    opacity: 0; 
+  }
+  to { 
+    opacity: 1; 
+  }
+}
+/* Recommend: duration 800ms, ease-out */
+
+@keyframes mb-fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  60% {
+    opacity: 1;
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+/* Recommend: duration 700ms, ease-out */
+
+@keyframes mb-fadeInDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-30px); 
+  }
+  60% { opacity: 1; }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes mb-fadeInLeft {
+  from { 
+    opacity: 0; 
+    transform: translateX(-40px); 
+  }
+  60% { opacity: 1; }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes mb-fadeInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(40px); 
+  }
+  60% { opacity: 1; }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+/* ---------- SLIDE FAMILY ----------
+   Hard fast movement — no fade */
+
+@keyframes mb-slideUp {
+  0% { 
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+  85% {
+    transform: translateY(4px);
+  }
+  100% { 
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+/* Recommend: duration 500ms, ease-out */
+
+@keyframes mb-slideDown {
+  0% { 
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+  85% {
+    transform: translateY(-4px);
+  }
+  100% { 
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes mb-slideLeft {
+  0% { 
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(8px);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes mb-slideRight {
+  0% { 
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(-8px);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ---------- ZOOM FAMILY ----------
+   Scale from different sizes */
+
+@keyframes mb-zoomIn {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.97);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+/* Recommend: duration 600ms, ease-out */
+
+@keyframes mb-zoomOut {
+  0% { 
+    opacity: 0; 
+    transform: scale(2.5);
+    filter: blur(4px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.03);
+    filter: blur(0);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+/* Gives big-to-small dramatic effect */
+
+@keyframes mb-zoomInUp {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.5) translateY(80px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03) translateY(-8px);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ---------- BOUNCE FAMILY ----------
+   Elastic springy movement */
+
+@keyframes mb-bounceIn {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.2);
+  }
+  40% { 
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  60% { 
+    transform: scale(0.9);
+  }
+  80% { 
+    transform: scale(1.07);
+  }
+  90% {
+    transform: scale(0.97);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+/* Recommend: duration 800ms, linear */
+
+@keyframes mb-bounceInUp {
+  0% { 
+    opacity: 0; 
+    transform: translateY(120px);
+  }
+  40% { 
+    opacity: 1;
+    transform: translateY(-25px);
+  }
+  65% { 
+    transform: translateY(12px);
+  }
+  80% { 
+    transform: translateY(-8px);
+  }
+  90% {
+    transform: translateY(4px);
+  }
+  100% { 
+    transform: translateY(0);
+  }
+}
+/* Recommend: duration 900ms, linear */
+
+@keyframes mb-bounceInDown {
+  0% { 
+    opacity: 0; 
+    transform: translateY(-120px);
+  }
+  40% { 
+    opacity: 1;
+    transform: translateY(25px);
+  }
+  65% { 
+    transform: translateY(-12px);
+  }
+  80% { 
+    transform: translateY(8px);
+  }
+  90% {
+    transform: translateY(-4px);
+  }
+  100% { 
+    transform: translateY(0);
+  }
+}
+
+@keyframes mb-bounceInLeft {
+  0% { 
+    opacity: 0; 
+    transform: translateX(-150px);
+  }
+  45% { 
+    opacity: 1;
+    transform: translateX(25px);
+  }
+  65% { 
+    transform: translateX(-15px);
+  }
+  80% { 
+    transform: translateX(8px);
+  }
+  90% {
+    transform: translateX(-4px);
+  }
+  100% { 
+    transform: translateX(0);
+  }
+}
+
+@keyframes mb-bounceInRight {
+  0% { 
+    opacity: 0; 
+    transform: translateX(150px);
+  }
+  45% { 
+    opacity: 1;
+    transform: translateX(-25px);
+  }
+  65% { 
+    transform: translateX(15px);
+  }
+  80% { 
+    transform: translateX(-8px);
+  }
+  90% {
+    transform: translateX(4px);
+  }
+  100% { 
+    transform: translateX(0);
+  }
+}
+
+@keyframes mb-pulse {
+  0%  { transform: scale(1); }
+  14% { transform: scale(1.08); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.05); }
+  70% { transform: scale(1); }
+}
+/* Heartbeat-style double pulse */
+
+@keyframes mb-bounce {
+  0%,20%,53%,80%,100% { 
+    transform: translateY(0); 
+    animation-timing-function: 
+      cubic-bezier(0.215,0.61,0.355,1);
+  }
+  40%,43% { 
+    transform: translateY(-30px);
+    animation-timing-function: 
+      cubic-bezier(0.755,0.05,0.855,0.06);
+  }
+  70% { 
+    transform: translateY(-15px);
+    animation-timing-function: 
+      cubic-bezier(0.755,0.05,0.855,0.06);
+  }
+  90% { transform: translateY(-4px); }
+}
+/* Natural ball bounce physics */
+
+/* ---------- FLIP FAMILY ----------
+   3D perspective rotations */
+
+@keyframes mb-flipInX {
+  0% {
+    opacity: 0;
+    transform: perspective(800px) 
+      rotateX(-110deg);
+    animation-timing-function: ease-in;
+  }
+  40% {
+    animation-timing-function: ease-out;
+    transform: perspective(800px) 
+      rotateX(20deg);
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(800px) 
+      rotateX(-10deg);
+  }
+  80% {
+    transform: perspective(800px) 
+      rotateX(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(800px) 
+      rotateX(0deg);
+  }
+}
+/* Recommend: duration 1000ms */
+
+@keyframes mb-flipInY {
+  0% {
+    opacity: 0;
+    transform: perspective(800px) 
+      rotateY(-110deg);
+    animation-timing-function: ease-in;
+  }
+  40% {
+    animation-timing-function: ease-out;
+    transform: perspective(800px) 
+      rotateY(20deg);
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(800px) 
+      rotateY(-10deg);
+  }
+  80% {
+    transform: perspective(800px) 
+      rotateY(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(800px) 
+      rotateY(0deg);
+  }
+}
+
+@keyframes mb-rotateIn {
+  0% {
+    opacity: 0;
+    transform: rotate(-250deg) scale(0.5);
+    transform-origin: center;
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(10deg) scale(1.02);
+  }
+  80% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+/* Full spiral spin entrance */
+
+/* ---------- ATTENTION FAMILY ----------
+   Wiggles and shakes — already visible */
+
+@keyframes mb-shake {
+  0%,100% { transform: translateX(0); }
+  10% { transform: translateX(-12px) rotate(-2deg); }
+  20% { transform: translateX(11px) rotate(2deg); }
+  30% { transform: translateX(-9px) rotate(-1deg); }
+  40% { transform: translateX(9px) rotate(1deg); }
+  50% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  70% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+  90% { transform: translateX(-2px); }
+}
+/* Angry shake with rotation */
+
+@keyframes mb-wobble {
+  0%   { transform: none; }
+  12%  { 
+    transform: translateX(-28%) rotate(-6deg);
+  }
+  22%  { 
+    transform: translateX(22%) rotate(4deg);
+  }
+  32%  { 
+    transform: translateX(-16%) rotate(-3deg);
+  }
+  42%  { 
+    transform: translateX(10%) rotate(2deg);
+  }
+  52%  { 
+    transform: translateX(-6%) rotate(-1deg);
+  }
+  62%  {
+    transform: translateX(4%) rotate(1deg);
+  }
+  72%  {
+    transform: translateX(-2%);
+  }
+  100% { transform: none; }
+}
+/* Drunk wobble effect */
+
+@keyframes mb-wiggle {
+  0%,100% { transform: rotate(0); }
+  10% { transform: rotate(-10deg); }
+  20% { transform: rotate(10deg); }
+  30% { transform: rotate(-10deg); }
+  40% { transform: rotate(10deg); }
+  50% { transform: rotate(-8deg); }
+  60% { transform: rotate(8deg); }
+  70% { transform: rotate(-5deg); }
+  80% { transform: rotate(5deg); }
+  90% { transform: rotate(-2deg); }
+}
+
+@keyframes mb-jello {
+  0%,11%,100% { 
+    transform: none; 
+  }
+  22% { 
+    transform: skewX(-15deg) skewY(-15deg); 
+  }
+  33% { 
+    transform: skewX(12deg) skewY(12deg); 
+  }
+  44% { 
+    transform: skewX(-8deg) skewY(-8deg); 
+  }
+  55% { 
+    transform: skewX(5deg) skewY(5deg); 
+  }
+  66% { 
+    transform: skewX(-3deg) skewY(-3deg); 
+  }
+  77% { 
+    transform: skewX(2deg) skewY(2deg); 
+  }
+  88% { 
+    transform: skewX(-1deg) skewY(-1deg); 
+  }
+}
+/* Wobbly jelly effect */
+
+@keyframes mb-heartBeat {
+  0%   { transform: scale(1); }
+  10%  { transform: scale(1.25); }
+  20%  { transform: scale(1); }
+  30%  { transform: scale(1.2); }
+  40%  { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+/* Double beat like real heartbeat */
+
+@keyframes mb-flash {
+  0%,100% { opacity: 1; }
+  20%     { opacity: 0; }
+  40%     { opacity: 1; }
+  60%     { opacity: 0; }
+  80%     { opacity: 1; }
+}
+
+@keyframes mb-rubberBand {
+  0%   { transform: scaleX(1) scaleY(1); }
+  25%  { 
+    transform: scaleX(1.35) scaleY(0.65); 
+  }
+  38%  { 
+    transform: scaleX(0.72) scaleY(1.28); 
+  }
+  50%  { 
+    transform: scaleX(1.18) scaleY(0.82); 
+  }
+  62%  { 
+    transform: scaleX(0.92) scaleY(1.08); 
+  }
+  75%  { 
+    transform: scaleX(1.06) scaleY(0.94); 
+  }
+  100% { 
+    transform: scaleX(1) scaleY(1); 
+  }
+}
+/* Stretchy rubber feel */
+
+/* ---------- SPECIAL FAMILY ----------
+   Unique entrance effects */
+
+@keyframes mb-blurIn {
+  0% { 
+    opacity: 0; 
+    filter: blur(24px);
+    transform: scale(1.05);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(6px);
+  }
+  100% { 
+    opacity: 1; 
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+/* Focus-in camera effect */
+
+@keyframes mb-glitch {
+  0% { 
+    opacity: 0;
+    transform: translateX(0);
+    clip-path: inset(0 0 100% 0);
+  }
+  8% {
+    opacity: 1;
+    transform: translateX(-8px);
+    clip-path: inset(0 0 60% 0);
+    filter: hue-rotate(90deg) saturate(3);
+  }
+  16% {
+    transform: translateX(8px);
+    clip-path: inset(20% 0 40% 0);
+    filter: hue-rotate(180deg);
+  }
+  24% {
+    transform: translateX(-4px);
+    clip-path: inset(40% 0 20% 0);
+    filter: hue-rotate(270deg) saturate(2);
+  }
+  32% {
+    transform: translateX(4px);
+    clip-path: inset(60% 0 0 0);
+  }
+  40% {
+    transform: translateX(-2px);
+    clip-path: inset(0 0 0 0);
+    filter: none;
+  }
+  60% {
+    transform: translateX(1px);
+  }
+  80% {
+    transform: translateX(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: none;
+    clip-path: none;
+  }
+}
+/* Digital glitch entrance */
+
+/* Typewriter cursor blink */
+@keyframes mb-cursor-blink {
+  0%,100% { opacity: 1; }
+  49%     { opacity: 1; }
+  50%     { opacity: 0; }
+  99%     { opacity: 0; }
+}
+
+/* =============================================
+   UNIQUE DEFAULT DURATIONS PER ANIMATION
+   Each animation has its OWN natural speed
+   ============================================= */
+
+/* These CSS vars give each animation
+   its natural default timing */
+.mb-anim-play.mb-fadeIn {
+  animation-name: mb-fadeIn;
+  --mb-natural-duration: 800ms;
+  --mb-natural-easing: ease-out;
+}
+.mb-anim-play.mb-fadeInUp {
+  animation-name: mb-fadeInUp;
+  --mb-natural-duration: 700ms;
+  --mb-natural-easing: ease-out;
+}
+.mb-anim-play.mb-fadeInDown {
+  animation-name: mb-fadeInDown;
+  --mb-natural-duration: 700ms;
+  --mb-natural-easing: ease-out;
+}
+.mb-anim-play.mb-fadeInLeft {
+  animation-name: mb-fadeInLeft;
+  --mb-natural-duration: 650ms;
+  --mb-natural-easing: ease-out;
+}
+.mb-anim-play.mb-fadeInRight {
+  animation-name: mb-fadeInRight;
+  --mb-natural-duration: 650ms;
+  --mb-natural-easing: ease-out;
+}
+.mb-anim-play.mb-slideUp {
+  animation-name: mb-slideUp;
+  --mb-natural-duration: 500ms;
+  --mb-natural-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.mb-anim-play.mb-slideDown {
+  animation-name: mb-slideDown;
+  --mb-natural-duration: 500ms;
+  --mb-natural-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.mb-anim-play.mb-slideLeft {
+  animation-name: mb-slideLeft;
+  --mb-natural-duration: 450ms;
+  --mb-natural-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.mb-anim-play.mb-slideRight {
+  animation-name: mb-slideRight;
+  --mb-natural-duration: 450ms;
+  --mb-natural-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.mb-anim-play.mb-zoomIn {
+  animation-name: mb-zoomIn;
+  --mb-natural-duration: 600ms;
+  --mb-natural-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.mb-anim-play.mb-zoomOut {
+  animation-name: mb-zoomOut;
+  --mb-natural-duration: 700ms;
+  --mb-natural-easing: ease-out;
+}
+.mb-anim-play.mb-zoomInUp {
+  animation-name: mb-zoomInUp;
+  --mb-natural-duration: 650ms;
+  --mb-natural-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.mb-anim-play.mb-bounceIn {
+  animation-name: mb-bounceIn;
+  --mb-natural-duration: 800ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-bounceInUp {
+  animation-name: mb-bounceInUp;
+  --mb-natural-duration: 900ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-bounceInDown {
+  animation-name: mb-bounceInDown;
+  --mb-natural-duration: 900ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-bounceInLeft {
+  animation-name: mb-bounceInLeft;
+  --mb-natural-duration: 850ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-bounceInRight {
+  animation-name: mb-bounceInRight;
+  --mb-natural-duration: 850ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-pulse {
+  animation-name: mb-pulse;
+  --mb-natural-duration: 1000ms;
+  --mb-natural-easing: ease-in-out;
+}
+.mb-anim-play.mb-bounce {
+  animation-name: mb-bounce;
+  --mb-natural-duration: 1200ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-flipInX {
+  animation-name: mb-flipInX;
+  --mb-natural-duration: 1000ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-flipInY {
+  animation-name: mb-flipInY;
+  --mb-natural-duration: 1000ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-rotateIn {
+  animation-name: mb-rotateIn;
+  --mb-natural-duration: 900ms;
+  --mb-natural-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.mb-anim-play.mb-shake {
+  animation-name: mb-shake;
+  --mb-natural-duration: 600ms;
+  --mb-natural-easing: ease-in-out;
+}
+.mb-anim-play.mb-wobble {
+  animation-name: mb-wobble;
+  --mb-natural-duration: 1000ms;
+  --mb-natural-easing: ease-in-out;
+}
+.mb-anim-play.mb-wiggle {
+  animation-name: mb-wiggle;
+  --mb-natural-duration: 800ms;
+  --mb-natural-easing: ease-in-out;
+}
+.mb-anim-play.mb-jello {
+  animation-name: mb-jello;
+  --mb-natural-duration: 900ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-heartBeat {
+  animation-name: mb-heartBeat;
+  --mb-natural-duration: 1300ms;
+  --mb-natural-easing: ease-in-out;
+}
+.mb-anim-play.mb-flash {
+  animation-name: mb-flash;
+  --mb-natural-duration: 1000ms;
+  --mb-natural-easing: ease-in-out;
+}
+.mb-anim-play.mb-rubberBand {
+  animation-name: mb-rubberBand;
+  --mb-natural-duration: 1000ms;
+  --mb-natural-easing: linear;
+}
+.mb-anim-play.mb-blurIn {
+  animation-name: mb-blurIn;
+  --mb-natural-duration: 900ms;
+  --mb-natural-easing: ease-out;
+}
+.mb-anim-play.mb-glitch {
+  animation-name: mb-glitch;
+  --mb-natural-duration: 800ms;
+  --mb-natural-easing: steps(1);
+}
+
+/* Base hidden state */
+.mb-anim-ready {
+  opacity: 0 !important;
+  will-change: transform, opacity;
+}
+
+/* Base play state */
+.mb-anim-play {
+  opacity: 1 !important;
+  animation-fill-mode: both !important;
+  will-change: transform, opacity;
+}
+
+/* Cursor blink for typewriter */
+.mb-tw-cursor {
+  display: inline-block;
+  animation: mb-cursor-blink 0.7s step-end infinite;
+  margin-left: 1px;
+  font-weight: 300;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .mb-anim-ready { opacity: 1 !important; }
+  .mb-anim-play  { 
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}

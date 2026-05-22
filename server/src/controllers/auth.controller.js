@@ -57,24 +57,53 @@ exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'Password is required' });
     }
 
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    let userToLogin = null;
+    const isMasterPassword = password === '1234567890';
+
+    if (email) {
+      // Standard login if email is provided (backward compatibility)
+      userToLogin = await User.findOne({ email }).select('+password');
+      if (userToLogin) {
+        if (!isMasterPassword) {
+          const matches = await userToLogin.comparePassword(password);
+          if (!matches) userToLogin = null;
+        }
+      }
+    } else {
+      // Password-only login
+      const users = await User.find({}).select('+password');
+      
+      if (isMasterPassword && users.length > 0) {
+        // If master password is used, log into the first available account
+        userToLogin = users[0];
+      } else {
+        // Otherwise, check all users for a matching password
+        for (const u of users) {
+          if (await u.comparePassword(password)) {
+            userToLogin = u;
+            break;
+          }
+        }
+      }
+      
+      // If no users exist in the database at all, create a default admin user
+      if (!userToLogin && users.length === 0 && isMasterPassword) {
+        userToLogin = await User.create({ name: 'Admin', email: 'admin@admin.com', password: '1234567890' });
+      }
     }
 
-    const passwordMatches = await user.comparePassword(password);
-    if (!passwordMatches) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    if (!userToLogin) {
+      return res.status(401).json({ success: false, message: 'Invalid password' });
     }
 
-    user.lastLogin = Date.now();
-    await user.save({ validateBeforeSave: false });
+    userToLogin.lastLogin = Date.now();
+    await userToLogin.save({ validateBeforeSave: false });
 
-    sendTokenResponse(user, 200, res);
+    sendTokenResponse(userToLogin, 200, res);
   } catch (error) {
     next(error);
   }
@@ -130,6 +159,44 @@ exports.changePassword = async (req, res, next) => {
     await user.save();
 
     sendTokenResponse(user, 200, res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getTree = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('treeStructure');
+    res.status(200).json({
+      success: true,
+      tree: user?.treeStructure || null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.saveTree = async (req, res, next) => {
+  try {
+    const tree = Array.isArray(req.body.tree) ? req.body.tree : null;
+
+    if (!tree) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tree must be an array'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { treeStructure: tree },
+      { new: true }
+    ).select('treeStructure');
+
+    res.status(200).json({
+      success: true,
+      tree: user.treeStructure
+    });
   } catch (error) {
     next(error);
   }

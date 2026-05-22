@@ -14,6 +14,15 @@ import { ToastService } from '../../services/toast.service';
 import { Subscription, interval } from 'rxjs';
 import { PreviewModalComponent } from '../../components/editor/preview-modal/preview-modal.component';
 import { SettingsModalComponent } from '../../components/editor/settings-modal/settings-modal.component';
+import { CommentsPanelComponent } from '../../components/editor/comments-panel/comments-panel.component';
+import { CommentApiService } from '../../services/comment-api.service';
+import { SocketService } from '../../services/socket.service';
+import { AuthService } from '../../services/auth.service';
+import { MobileOrderPanelComponent } from '../../components/editor/mobile-order-panel/mobile-order-panel.component';
+import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
+import { ThemeService } from '../../services/theme.service';
+import { AutoSaveService } from '../../services/auto-save.service';
+import { FileTreeService } from '../../services/file-tree.service';
 
 @Component({
   selector: 'app-editor-page',
@@ -26,19 +35,41 @@ import { SettingsModalComponent } from '../../components/editor/settings-modal/s
     CanvasComponent,
     RightSidebarComponent,
     PreviewModalComponent,
-    SettingsModalComponent
+    SettingsModalComponent,
+    CommentsPanelComponent,
+    MobileOrderPanelComponent,
+    ThemeSwitcherComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="editor-root">
       <app-toolbar 
+        [canvas]="canvasRef"
         [pageId]="pageId"
-        [savingStatus]="savingStatus()"
-        (saveRequest)="savePage(true)"
+        [savingStatus]="'Saved'"
+        [unresolvedCommentCount]="unresolvedCommentCount()"
         (historyToggle)="toggleHistory()"
+        (themesToggle)="themesOpen.set(!themesOpen())"
+        (commentsToggle)="commentsOpen.set(!commentsOpen())"
         (previewToggle)="previewOpen.set(true)"
-        (settingsToggle)="settingsOpen.set(true)">
+        (settingsToggle)="settingsOpen.set(true)"
+        (mobileOrderToggle)="mobileOrderOpen.set(!mobileOrderOpen())">
       </app-toolbar>
+
+      <app-theme-switcher *ngIf="themesOpen()" (close)="themesOpen.set(false)"></app-theme-switcher>
+      <app-comments-panel *ngIf="commentsOpen() && pageId" [pageId]="pageId" (close)="commentsOpen.set(false)"></app-comments-panel>
+
+      <div *ngIf="pageId && pageId !== 'new' && pageId !== 'temp' && socketService.activeUsers().length > 0" class="flex items-center gap-1 bg-gray-900 border-b border-gray-800 px-4 py-2">
+        <span class="text-xs text-gray-400 mr-2">Collaborating:</span>
+        <ng-container *ngFor="let user of socketService.activeUsers()">
+          <div 
+            class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 cursor-pointer"
+            [style.background]="user.color || '#3b82f6'"
+            [title]="user.name || 'Anonymous'">
+            {{ user.name ? user.name[0].toUpperCase() : 'A' }}
+          </div>
+        </ng-container>
+      </div>
 
       <app-preview-modal *ngIf="previewOpen()" (close)="previewOpen.set(false)"></app-preview-modal>
       <app-settings-modal *ngIf="settingsOpen()" (close)="settingsOpen.set(false)"></app-settings-modal>
@@ -57,8 +88,9 @@ import { SettingsModalComponent } from '../../components/editor/settings-modal/s
       </div>
 
       <div class="editor-main">
+        <app-mobile-order-panel *ngIf="mobileOrderOpen()" (close)="mobileOrderOpen.set(false)" class="flex-shrink-0"></app-mobile-order-panel>
         <app-left-sidebar class="flex-shrink-0" (newPage)="addPage()"></app-left-sidebar>
-        <app-canvas class="flex-1 overflow-hidden"></app-canvas>
+        <app-canvas #canvasRef class="flex-1 overflow-hidden"></app-canvas>
         <app-right-sidebar class="flex-shrink-0"></app-right-sidebar>
       </div>
 
@@ -151,19 +183,27 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  socketService = inject(SocketService);
+  authService = inject(AuthService);
+  private commentApi = inject(CommentApiService);
+  private themeService = inject(ThemeService);
+  autoSave = inject(AutoSaveService);
+  private fileTreeService = inject(FileTreeService);
 
   pageId: string | null = null;
-  savingStatus = signal<'Saved' | 'Saved ✓' | 'Saving...' | 'Error' | 'Unsaved'>('Saved');
   pages = signal<any[]>([]);
   historyOpen = signal(false);
+  themesOpen = signal(false);
   previewOpen = signal(false);
   settingsOpen = signal(false);
+  commentsOpen = signal(false);
+  mobileOrderOpen = signal(false);
+  unresolvedCommentCount = signal(0);
   versions = signal<any[]>([]);
   private autoSaveSub?: Subscription;
 
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    // Check if user is typing in an input or textarea
     const target = event.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
       return;
@@ -171,28 +211,40 @@ export class EditorPageComponent implements OnInit, OnDestroy {
 
     const selectedId = this.store.selectedBlockId();
 
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      this.autoSave.forceSave();
+      this.toast.info('Saving page...');
+      return;
+    }
+
+    if (event.key === 'm' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      const nextMode = this.store.editMode() === 'desktop' ? 'mobile' : 'desktop';
+      this.store.setEditMode(nextMode);
+      this.toast.success(`Mode toggled to: ${nextMode.toUpperCase()} EDIT`);
+      return;
+    }
+
     if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId) {
       this.store.deleteBlock(selectedId);
       event.preventDefault();
-      this.markUnsaved();
     } else if (event.key === 'Escape') {
       this.store.clearSelection();
     } else if (event.key === 'd' && (event.ctrlKey || event.metaKey) && selectedId) {
       this.store.duplicateBlock(selectedId);
       event.preventDefault();
-      this.markUnsaved();
     } else if (event.key === 'z' && (event.ctrlKey || event.metaKey) && event.shiftKey) {
       this.store.redo();
       event.preventDefault();
-      this.markUnsaved();
     } else if (event.key === 'z' && (event.ctrlKey || event.metaKey) && !event.shiftKey) {
       this.store.undo();
       event.preventDefault();
-      this.markUnsaved();
     }
   }
 
   ngOnInit() {
+    this.fileTreeService.loadFromStorage();
     this.route.paramMap.subscribe(params => {
       this.pageId = params.get('id');
       this.loadPageTabs();
@@ -207,105 +259,105 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         this.store.activePageId.set('temp');
         this.store.loadBlocks(this.storageService.loadPage() || []);
       }
-    });
 
-    // Auto-save every 30 seconds
-    this.autoSaveSub = interval(30000).subscribe(() => {
-      if (this.savingStatus() === 'Unsaved') {
-        this.savePage(false);
+      if (this.pageId && this.pageId !== 'new' && this.pageId !== 'temp') {
+        this.socketService.connect();
+        this.socketService.joinPage(this.pageId);
+        
+        const currentUser = this.authService.user();
+        const currentUserId = currentUser ? currentUser._id : null;
+
+        this.socketService.onBlockChanged((data) => {
+          if (data.updatedBy !== currentUserId) {
+            this.store.handleRemoteBlockChange(data.block);
+          }
+        });
+        
+        this.socketService.onBlockAdded((data) => {
+          if (data.addedBy !== currentUserId) {
+            this.store.handleRemoteBlockAdded(data.block);
+          }
+        });
+        
+        this.socketService.onBlockDeleted((data) => {
+          if (data.deletedBy !== currentUserId) {
+            this.store.handleRemoteBlockDeleted(data.blockId);
+          }
+        });
+
+        this.socketService.onNewComment((data) => {
+          // Placeholder for comment update
+        });
       }
     });
   }
 
-  @HostListener('mouseup')
-  onMouseUp() {
-    // If a drop happened, we mark unsaved
-    setTimeout(() => this.markUnsaved(), 100);
-  }
-  
-  @HostListener('keyup')
-  onKeyUp() {
-    // If typing happened in properties, mark unsaved
-    this.markUnsaved();
-  }
+
 
   ngOnDestroy() {
-    if (this.autoSaveSub) {
-      this.autoSaveSub.unsubscribe();
-    }
-    if (this.savingStatus() === 'Unsaved') {
-      this.savePage(false);
-    }
-  }
-
-  markUnsaved() {
-    if (this.savingStatus() !== 'Saving...') {
-      this.savingStatus.set('Unsaved');
+    this.autoSave.destroy();
+    if (this.pageId && this.pageId !== 'new' && this.pageId !== 'temp') {
+      this.socketService.leavePage(this.pageId);
+      this.socketService.disconnect();
     }
   }
 
   loadPage(id: string) {
     this.pageApi.getPage(id).subscribe({
       next: (page) => {
-        this.store.loadPageSettings({
-          title: page.title,
-          slug: page.slug,
-          metaTitle: page.metaTitle,
-          metaDescription: page.metaDescription,
-          ogImage: page.ogImage,
-          canonicalUrl: page.canonicalUrl,
-          customDomain: page.customDomain,
-          published: page.published,
-          globalStyles: page.globalStyles
-        });
+        this.store.setPageTitleSilent(page.title);
+        this.store.updatePageMetadata('pageSlug', page.slug || '');
+        this.store.updatePageMetadata('canonicalUrl', page.canonicalUrl || '');
+        this.store.updatePageMetadata('customDomain', page.customDomain || '');
+        this.store.updatePublished(page.published);
+        this.store.setSEOSilent(page.seo);
+        this.store.setSettingsSilent(page.settings);
+        
+        if (page.globalStyles) {
+          // This will trigger an auto-save, but since it's initial load, we will manually clear unsaved changes below
+          this.store.updateGlobalStyles(page.globalStyles);
+        }
+        
         this.store.activePageId.set(page._id);
+        this.fileTreeService.selectNodeByPageId(page._id);
+        
+        if (page.settings) {
+          this.themeService.restoreFromPage(page.settings.themeId, page.settings.customTheme);
+        }
+        
         if (page.blocks && page.blocks.length > 0) {
           this.store.loadBlocks(page.blocks);
         } else {
           this.store.loadBlocks([]);
         }
+
+        this.autoSave.init(page._id);
+        
+        setTimeout(() => {
+          this.autoSave.hasUnsavedChanges.set(false);
+        }, 100);
+
+        // Fetch unresolved comment count
+        this.commentApi.getComments(page._id).subscribe({
+          next: (comments) => {
+            const count = comments.filter(c => !c.resolved).length;
+            this.unresolvedCommentCount.set(count);
+          }
+        });
       }
     });
   }
 
-  savePage(showToast = false) {
-    if (!this.pageId || this.pageId === 'temp' || this.pageId === 'new') return;
-    
-    this.savingStatus.set('Saving...');
-    const blocks = this.store.blocks();
-    
-    this.pageApi.updatePage(this.pageId, { 
-      blocks,
-      title: this.store.pageTitle(),
-      metaTitle: this.store.metaTitle(),
-      metaDescription: this.store.metaDescription(),
-      ogImage: this.store.ogImage(),
-      canonicalUrl: this.store.canonicalUrl(),
-      customDomain: this.store.customDomain(),
-      globalStyles: this.store.globalStyles()
-    }).subscribe({
-      next: () => {
-        this.savingStatus.set('Saved ✓');
-        if (showToast) {
-          this.toast.success('Page saved successfully');
-        }
-        setTimeout(() => {
-          if (this.savingStatus() === 'Saved ✓') {
-            this.savingStatus.set('Saved');
-          }
-        }, 2000);
-      },
-      error: () => {
-        this.savingStatus.set('Error');
-        this.toast.error('Save failed');
-      }
-    });
-  }
+
 
   loadPageTabs() {
     this.pageApi.getPages().subscribe({
       next: pages => {
         this.pages.set(pages);
+        this.fileTreeService.syncWithPages(pages);
+        if (this.pageId && this.pageId !== 'new' && this.pageId !== 'temp') {
+          this.fileTreeService.selectNodeByPageId(this.pageId);
+        }
         this.store.loadPages(pages.map(page => ({
           id: page._id,
           title: page.title,
@@ -318,8 +370,8 @@ export class EditorPageComponent implements OnInit, OnDestroy {
 
   openPage(id: string) {
     if (id === this.pageId) return;
-    if (this.savingStatus() === 'Unsaved') {
-      this.savePage();
+    if (this.autoSave.hasUnsavedChanges()) {
+      this.autoSave.forceSave();
     }
     this.router.navigate(['/editor', id]);
   }
@@ -330,6 +382,12 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     const slug = title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `page-${Date.now()}`;
     this.pageApi.createPage({ title }).subscribe({
       next: page => {
+        this.fileTreeService.addFile(page.title, page._id);
+        this.fileTreeService.updatePageStatus(page._id, {
+          pageSlug: page.slug,
+          published: page.published,
+          lastModified: page.updatedAt ? new Date(page.updatedAt) : new Date()
+        });
         this.loadPageTabs();
         this.router.navigate(['/editor', page._id]);
       }
@@ -353,7 +411,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
       next: page => {
         this.store.loadBlocks(page.blocks || []);
         this.loadVersions();
-        this.savingStatus.set('Saved');
+        this.autoSave.hasUnsavedChanges.set(false);
       }
     });
   }

@@ -51,12 +51,16 @@ const pageSchema = new mongoose.Schema({
   seo: {
     metaTitle: { type: String, default: '' },
     metaDescription: { type: String, default: '' },
-    ogImage: { type: String, default: '' }
+    ogImage: { type: String, default: '' },
+    canonicalUrl: { type: String, default: '' },
+    keywords: { type: String, default: '' }
   },
   settings: {
     favicon: { type: String, default: '' },
     customCss: { type: String, default: '' },
-    customJs: { type: String, default: '' }
+    customJs: { type: String, default: '' },
+    themeId: { type: String, default: 'clean-white' },
+    customTheme: { type: Object, default: null }
   },
   viewCount: {
     type: Number,
@@ -86,6 +90,29 @@ const pageSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  workspaceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Workspace',
+    default: null
+  },
+  lastEditedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  collaborators: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    lastSeen: Date,
+    cursorColor: String
+  }],
+  isLocked: {
+    type: Boolean,
+    default: false
+  },
+  lockedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   versions: {
     type: Array,
     default: []
@@ -99,6 +126,11 @@ const pageSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+pageSchema.index({ userId: 1, updatedAt: -1 });
+pageSchema.index({ slug: 1 }, { unique: true });
+pageSchema.index({ userId: 1, published: 1 });
+pageSchema.index({ title: 'text' }, { weights: { title: 10 } });
 
 pageSchema.pre('save', function updateTimestamp(next) {
   this.updatedAt = Date.now();

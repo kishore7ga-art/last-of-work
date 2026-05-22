@@ -1,0 +1,179 @@
+<div class="file-tree-container" (keydown)="onKeyDown($event)" tabindex="0">
+  <div class="tree-header">
+    <span class="tree-title">FILES</span>
+    <div class="tree-actions">
+      <button class="icon-btn" (click)="newFile()" title="New Page (Ctrl+N)">
+        <lucide-icon name="file-plus" [size]="14"></lucide-icon>
+      </button>
+      <button class="icon-btn" (click)="newFolder()" title="New Folder">
+        <lucide-icon name="folder-plus" [size]="14"></lucide-icon>
+      </button>
+      <button class="icon-btn" (click)="treeService.collapseAll()" title="Collapse All">
+        <lucide-icon name="chevrons-up-down" [size]="14"></lucide-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="tree-search">
+    <lucide-icon name="search" [size]="13" class="search-icon"></lucide-icon>
+    <input
+      type="text"
+      [value]="treeService.searchQuery()"
+      (input)="onSearch($event)"
+      placeholder="Search files..."
+      class="search-input"
+    />
+    @if (treeService.searchQuery()) {
+      <button class="clear-search" (click)="clearSearch()" title="Clear search">
+        <lucide-icon name="x" [size]="12"></lucide-icon>
+      </button>
+    }
+  </div>
+
+  <div
+    class="tree-nodes"
+    id="file-tree-list"
+    cdkDropList
+    [cdkDropListData]="treeService.flatNodes()"
+    (cdkDropListDropped)="onDrop($event)"
+    (click)="onTreeClick()">
+    @if (treeService.flatNodes().length === 0) {
+      <div class="tree-empty">
+        <lucide-icon name="file-x" [size]="32" class="empty-icon"></lucide-icon>
+        <p>No files yet</p>
+        <button class="create-btn" (click)="newFile()">Create your first page</button>
+      </div>
+    }
+
+    @for (node of treeService.flatNodes(); track node.id) {
+      <div
+        class="tree-node"
+        [class.selected]="treeService.selectedId() === node.id"
+        [class.is-block]="node.type === 'block'"
+        [class.is-page]="node.type === 'file'"
+        [class.is-folder]="node.type === 'folder'"
+        [class.focused]="treeService.focusedId() === node.id"
+        [class.renaming]="treeService.renamingId() === node.id"
+        [style.padding-left.px]="node.level * 16 + 8"
+        [attr.data-id]="node.id"
+        [attr.data-type]="node.type"
+        (click)="onNodeClick(node, $event)"
+        (dblclick)="onNodeDblClick(node)"
+        (contextmenu)="onContextMenu(node, $event)"
+        cdkDrag
+        [cdkDragDisabled]="node.id === rootId"
+        [cdkDragData]="node">
+        
+        <!-- Indent guides -->
+        @for (i of getIndentArray(node.level); track i) {
+          <div class="indent-guide" [style.left.px]="i * 16 + 16"></div>
+        }
+
+        <!-- Expand arrow -->
+        @if (node.type !== 'block') {
+          <span class="expand-arrow" [class.expanded]="isExpanded(node.id)" [class.invisible]="node.type !== 'folder' && node.type !== 'file'">
+            <lucide-icon name="chevron-right" [size]="11"></lucide-icon>
+          </span>
+        } @else {
+          <span class="block-spacer"></span>
+        }
+
+        <!-- Icon -->
+        <span class="node-icon">
+          @if (node.type === 'folder') {
+            <lucide-icon
+              [name]="isExpanded(node.id) ? 'folder-open' : 'folder'"
+              [size]="14"
+              class="folder-icon"></lucide-icon>
+          } @else if (node.type === 'file') {
+            <lucide-icon name="file-text" [size]="14" class="file-icon"></lucide-icon>
+          } @else {
+            <!-- Block node icon -->
+            <lucide-icon 
+              [name]="node.icon || 'box'"
+              [size]="12"
+              class="block-icon"></lucide-icon>
+          }
+        </span>
+
+        <!-- Name -->
+        @if (treeService.renamingId() === node.id) {
+          <input
+            #renameInput
+            type="text"
+            [value]="node.name"
+            class="rename-input"
+            (blur)="onRenameBlur($event, node)"
+            (keydown)="onRenameKeydown($event, node)"
+            (click)="$event.stopPropagation()"
+          />
+        } @else {
+          <span class="node-name">{{ node.name }}</span>
+        }
+
+        <!-- Block type badge -->
+        @if (node.type === 'block') {
+          <span class="block-type-badge">
+            {{ node.blockType }}
+          </span>
+        }
+
+        <!-- File badges -->
+        @if (node.type === 'file') {
+          <span class="published-dot"
+            [class.published]="node.published"
+            [title]="node.published ? 'Published' : 'Draft'">
+          </span>
+        }
+
+        <div class="node-hover-actions">
+          @if (node.type === 'folder') {
+            <button class="hover-btn" (click)="newFileInFolder(node, $event)" title="New Page">
+              <lucide-icon name="file-plus" [size]="12"></lucide-icon>
+            </button>
+          }
+          <button class="hover-btn" (click)="onMoreClick(node, $event)" title="More actions">
+            <lucide-icon name="more-horizontal" [size]="12"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (contextMenu().visible) {
+    <div
+      class="context-menu"
+      [style.top.px]="contextMenu().y"
+      [style.left.px]="contextMenu().x"
+      (click)="$event.stopPropagation()">
+      @for (item of contextMenuItems(); track item.id) {
+        @if (item.divider) {
+          <div class="menu-divider"></div>
+        } @else {
+          <button
+            class="menu-item"
+            [class.danger]="item.danger"
+            [disabled]="item.disabled"
+            (click)="onMenuItemClick(item)">
+            <lucide-icon [name]="item.icon" [size]="13"></lucide-icon>
+            <span>{{ item.label }}</span>
+            @if (item.shortcut) {
+              <span class="shortcut">{{ item.shortcut }}</span>
+            }
+          </button>
+        }
+      }
+    </div>
+  }
+
+  <div class="tree-status">
+    {{ treeService.flatNodes().length }} items
+    @if (treeService.searchQuery()) {
+      <span> | {{ treeService.searchResults().length }} found</span>
+    }
+  </div>
+</div>
+
+@if (contextMenu().visible) {
+  <div class="overlay" (click)="closeContextMenu()"></div>
+}

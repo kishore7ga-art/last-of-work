@@ -6,17 +6,24 @@ import { CanvasBlock } from '../../../store/builder.models';
 import { BuilderStore } from '../../../store/builder.store';
 import { ComponentLibraryService } from '../../../services/component-library.service';
 import { ToastService } from '../../../services/toast.service';
+import { AnimateDirective } from '../../../directives/animate.directive';
+import { BlockAnimation } from '../../../models/animation.models';
+
+
 
 @Component({
   selector: 'app-block-wrapper',
   standalone: true,
-  imports: [CommonModule, DragDropModule, LucideAngularModule],
+  imports: [CommonModule, DragDropModule, LucideAngularModule, AnimateDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="block-frame"
+      [mbAnimate]="mbAnimate"
+      [mbAnimatePreview]="isPreviewMode"
       [attr.data-block-id]="block.id"
       [class.selected]="isSelected()"
+      [class.has-video-selected]="isSelected() && block.type === 'section' && block.props.videoBackground?.enabled"
       [class.hovered]="isHovered && !isSelected()"
       (mouseenter)="onMouseEnter()"
       (mouseleave)="onMouseLeave()"
@@ -56,6 +63,14 @@ import { ToastService } from '../../../services/toast.service';
       box-shadow: 0 0 0 4px rgba(79, 110, 247, 0.15);
       z-index: 3;
     }
+    .block-frame.has-video-selected {
+      outline: 2px solid #a855f7 !important;
+      box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15) !important;
+    }
+    .block-frame.has-video-selected .mini-toolbar,
+    .block-frame.has-video-selected .toolbar-arrow {
+      background: #a855f7 !important;
+    }
     .mini-toolbar {
       position: absolute;
       left: 10px;
@@ -90,6 +105,9 @@ import { ToastService } from '../../../services/toast.service';
 })
 export class BlockWrapperComponent {
   @Input() block!: CanvasBlock;
+  @Input() isPreviewMode = false;
+  @Input() isMobile = false;
+  @Input() mbAnimate?: BlockAnimation;
 
   private store = inject(BuilderStore);
   private library = inject(ComponentLibraryService);

@@ -1,0 +1,213 @@
+<div class="templates-panel-wrap">
+  <!-- Search Bar -->
+  <div class="search-wrap">
+    <lucide-icon name="search" [size]="14"></lucide-icon>
+    <input 
+      [ngModel]="searchQuery()" 
+      (ngModelChange)="searchQuery.set($event)" 
+      placeholder="Search templates..." />
+    <button 
+      *ngIf="searchQuery()" 
+      class="clear-search" 
+      (click)="clearSearch()" 
+      title="Clear Search">
+      <lucide-icon name="x" [size]="12"></lucide-icon>
+    </button>
+  </div>
+
+  <!-- Horizontal Scroll Category Pills -->
+  <div class="pills-scroll">
+    <button 
+      *ngFor="let pill of pills()" 
+      [class.active]="selectedCategory() === pill.key" 
+      (click)="selectedCategory.set(pill.key)" 
+      class="pill-btn">
+      {{ pill.label }}
+    </button>
+  </div>
+
+  <!-- Main Templates Scroll Area -->
+  <div class="template-scroll" cdkDropList id="templates-list" [cdkDropListConnectedTo]="['canvas-list']" [cdkDropListSortingDisabled]="true">
+    
+    <!-- Recently Used Templates (Before Categories, only if has items) -->
+    <ng-container *ngIf="recentTemplates().length > 0 && searchQuery() === '' && selectedCategory() === 'all'">
+      <div class="category-label">Recently Used</div>
+      <div class="templates-grid">
+        <div 
+          *ngFor="let template of recentTemplates(); trackBy: trackByTpl" 
+          cdkDrag 
+          [cdkDragData]="{ template, isTemplate: true }"
+          (click)="addTemplate(template)"
+          (mouseenter)="hoveredId.set(template.id)"
+          (mouseleave)="hoveredId.set(null)"
+          class="template-card">
+          
+          <div *cdkDragPreview class="drag-preview">
+            <span class="preview-text">Add {{ template.name }}</span>
+          </div>
+
+          <!-- REAL PREVIEW using scaled div -->
+          <div class="template-preview-wrapper">
+            <div class="template-preview-scale">
+              <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)">
+              </div>
+            </div>
+            
+            <!-- Favorite button preserved -->
+            <button 
+              class="heart-btn" 
+              [class.fav]="isFav(template.id)" 
+              (click)="toggleFavorite(template.id, $event)" 
+              title="Favorite">
+              <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
+            </button>
+
+            <!-- Hover overlay -->
+            @if (hoveredId() === template.id) {
+              <div class="preview-overlay">
+                <button class="add-btn">
+                  + Add to Canvas
+                </button>
+              </div>
+            }
+          </div>
+          
+          <!-- Template info -->
+          <div class="template-info">
+            <span class="template-name">
+              {{ template.name }}
+            </span>
+            <span class="template-category" [style.background]="getCategoryColor(template.category)">
+              {{ template.category }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Grouped Categories View (when "All" is selected) -->
+    <ng-container *ngIf="selectedCategory() === 'all'; else flatView">
+      <div *ngFor="let group of groupedTemplates()" class="category-group">
+        <div class="category-label flex items-center justify-between">
+          <span>{{ group.label }}</span>
+          <span class="count-badge">{{ group.templates.length }}</span>
+        </div>
+        
+        <div class="templates-grid">
+          <div 
+            *ngFor="let template of group.templates; trackBy: trackByTpl" 
+            cdkDrag 
+            [cdkDragData]="{ template, isTemplate: true }"
+            (click)="addTemplate(template)"
+            (mouseenter)="hoveredId.set(template.id)"
+            (mouseleave)="hoveredId.set(null)"
+            class="template-card">
+            
+            <div *cdkDragPreview class="drag-preview">
+              <span class="preview-text">Add {{ template.name }}</span>
+            </div>
+
+            <!-- REAL PREVIEW using scaled div -->
+            <div class="template-preview-wrapper">
+              <div class="template-preview-scale">
+                <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)">
+                </div>
+              </div>
+              
+              <!-- Favorite button preserved -->
+              <button 
+                class="heart-btn" 
+                [class.fav]="isFav(template.id)" 
+                (click)="toggleFavorite(template.id, $event)" 
+                title="Favorite">
+                <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
+              </button>
+
+              <!-- Hover overlay -->
+              @if (hoveredId() === template.id) {
+                <div class="preview-overlay">
+                  <button class="add-btn">
+                    + Add to Canvas
+                  </button>
+                </div>
+              }
+            </div>
+            
+            <!-- Template info -->
+            <div class="template-info">
+              <span class="template-name">
+                {{ template.name }}
+              </span>
+              <span class="template-category" [style.background]="getCategoryColor(template.category)">
+                {{ template.category }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Flat Category/Search View -->
+    <ng-template #flatView>
+      <div class="templates-grid mt-4">
+        <div 
+          *ngFor="let template of filteredTemplates(); trackBy: trackByTpl" 
+          cdkDrag 
+          [cdkDragData]="{ template, isTemplate: true }"
+          (click)="addTemplate(template)"
+          (mouseenter)="hoveredId.set(template.id)"
+          (mouseleave)="hoveredId.set(null)"
+          class="template-card">
+          
+          <div *cdkDragPreview class="drag-preview">
+            <span class="preview-text">Add {{ template.name }}</span>
+          </div>
+
+          <!-- REAL PREVIEW using scaled div -->
+          <div class="template-preview-wrapper">
+            <div class="template-preview-scale">
+              <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)">
+              </div>
+            </div>
+            
+            <!-- Favorite button preserved -->
+            <button 
+              class="heart-btn" 
+              [class.fav]="isFav(template.id)" 
+              (click)="toggleFavorite(template.id, $event)" 
+              title="Favorite">
+              <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
+            </button>
+
+            <!-- Hover overlay -->
+            @if (hoveredId() === template.id) {
+              <div class="preview-overlay">
+                <button class="add-btn">
+                  + Add to Canvas
+                </button>
+              </div>
+            }
+          </div>
+          
+          <!-- Template info -->
+          <div class="template-info">
+            <span class="template-name">
+              {{ template.name }}
+            </span>
+            <span class="template-category" [style.background]="getCategoryColor(template.category)">
+              {{ template.category }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Search Empty State -->
+    <div *ngIf="filteredTemplates().length === 0" class="empty-search-state">
+      <lucide-icon name="search" [size]="48" class="muted-search-icon"></lucide-icon>
+      <h3>No templates found for "{{ searchQuery() }}"</h3>
+      <p>Try searching: <b>header, footer, hero, pricing, contact...</b></p>
+    </div>
+
+  </div>
+</div>

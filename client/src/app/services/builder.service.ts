@@ -9,6 +9,94 @@ export class BuilderService {
   private store = inject(BuilderStore);
 
   exportToHTML(blocks: CanvasBlock[]): string {
+    const cssRules: string[] = [];
+    const mobileCssRules: string[] = [];
+
+    // Helper to map prop names to CSS keys
+    const toCssKey = (key: string): string => {
+      switch (key) {
+        case 'fontSize': return 'font-size';
+        case 'fontWeight': return 'font-weight';
+        case 'textAlign': return 'text-align';
+        case 'lineHeight': return 'line-height';
+        case 'letterSpacing': return 'letter-spacing';
+        case 'borderRadius': return 'border-radius';
+        case 'backgroundColor': return 'background-color';
+        case 'shadow': return 'box-shadow';
+        case 'minHeight': return 'min-height';
+        case 'flexDirection': return 'flex-direction';
+        case 'alignItems': return 'align-items';
+        case 'justifyContent': return 'justify-content';
+        case 'gridColumns': return 'grid-template-columns';
+        default: return key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      }
+    };
+
+    // Helper to generate a rule set for a block
+    const buildStyleRule = (block: CanvasBlock, isMobile: boolean): string => {
+      const activeProps = isMobile 
+        ? { ...block.props, ...(block.mobileProps || {}) }
+        : block.props;
+      
+      const styles: string[] = [];
+
+      const keys = [
+        'fontSize', 'fontWeight', 'textAlign', 'color', 'padding', 'margin', 
+        'lineHeight', 'letterSpacing', 'width', 'height', 'borderRadius', 
+        'backgroundColor', 'border', 'shadow', 'opacity', 'display', 'minHeight',
+        'flexDirection', 'alignItems', 'justifyContent', 'gridColumns', 'gap'
+      ];
+
+      keys.forEach(k => {
+        const val = activeProps[k];
+        if (val !== undefined && val !== null && val !== '') {
+          styles.push(`${toCssKey(k)}: ${val}`);
+        }
+      });
+
+      // Gradient background helper
+      if (activeProps['gradientFrom'] && activeProps['gradientTo']) {
+        styles.push(`background: linear-gradient(135deg, ${activeProps['gradientFrom']}, ${activeProps['gradientTo']})`);
+      } else if (activeProps['src'] && block.type === 'section') {
+        styles.push(`background: url(${activeProps['src']}) center/cover no-repeat`);
+      }
+
+      // Visibility display override
+      if (isMobile) {
+        if (block.visibility?.mobile === false) {
+          styles.push('display: none !important');
+        }
+        if (block.mobileOrder !== null && block.mobileOrder !== undefined) {
+          styles.push(`order: ${block.mobileOrder}`);
+        }
+      } else {
+        if (block.visibility?.desktop === false) {
+          styles.push('display: none !important');
+        }
+      }
+
+      return styles.join('; ');
+    };
+
+    // Populate CSS rules
+    const collectStyles = (allBlocks: CanvasBlock[]) => {
+      allBlocks.forEach(block => {
+        const dStyle = buildStyleRule(block, false);
+        if (dStyle) {
+          cssRules.push(`.block-${block.id} { ${dStyle} }`);
+        }
+        const mStyle = buildStyleRule(block, true);
+        if (mStyle) {
+          mobileCssRules.push(`.block-${block.id} { ${mStyle} }`);
+        }
+        if (block.children && block.children.length > 0) {
+          collectStyles(block.children);
+        }
+      });
+    };
+
+    collectStyles(blocks);
+
     const htmlContent = blocks.map(block => this.renderBlockHTML(block)).join('\n');
     
     return `<!DOCTYPE html>
@@ -18,8 +106,17 @@ export class BuilderService {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Exported Page</title>
   <style>
-    body { margin: 0; font-family: sans-serif; }
+    body { margin: 0; font-family: sans-serif; background-color: #fafafa; color: #111827; }
     * { box-sizing: border-box; }
+    img { max-width: 100%; height: auto; display: block; }
+    
+    /* Core Desktop Layout Styles */
+    ${cssRules.join('\n    ')}
+    
+    /* Responsive Mobile Layout Overrides */
+    @media (max-width: 768px) {
+      ${mobileCssRules.join('\n      ')}
+    }
   </style>
 </head>
 <body>
@@ -30,41 +127,23 @@ ${htmlContent}
 
   private renderBlockHTML(block: CanvasBlock): string {
     const props = block.props;
-    const styleObj: any = {};
-    
-    if (props.fontSize) styleObj['font-size'] = props.fontSize;
-    if (props.fontWeight) styleObj['font-weight'] = props.fontWeight;
-    if (props.textAlign) styleObj['text-align'] = props.textAlign;
-    if (props.color) styleObj['color'] = props.color;
-    if (props.padding) styleObj['padding'] = props.padding;
-    if (props.margin) styleObj['margin'] = props.margin;
-    if (props.lineHeight) styleObj['line-height'] = props.lineHeight;
-    if (props.width) styleObj['width'] = props.width;
-    if (props.height) styleObj['height'] = props.height;
-    if (props.objectFit) styleObj['object-fit'] = props.objectFit;
-    if (props.borderRadius) styleObj['border-radius'] = props.borderRadius;
-    if (props.backgroundColor) styleObj['background-color'] = props.backgroundColor;
-    if (props.border) styleObj['border'] = props.border;
-    if (props.shadow) styleObj['box-shadow'] = props.shadow;
-    if (props.opacity !== undefined) styleObj['opacity'] = props.opacity;
-    if (props.display) styleObj['display'] = props.display;
-    if (props.minHeight) styleObj['min-height'] = props.minHeight;
-
-    const styleString = Object.keys(styleObj)
-      .map(key => `${key}: ${styleObj[key]}`)
-      .join('; ');
-
     switch (block.type) {
       case 'text':
-        return `<p style="${styleString}">${props.content || ''}</p>`;
+        return `<p class="block-${block.id}">${props['content'] || ''}</p>`;
       case 'heading':
-        return `<h2 style="${styleString}">${props.content || ''}</h2>`;
+        const level = props['level'] || 'h2';
+        return `<${level} class="block-${block.id}">${props['content'] || ''}</${level}>`;
       case 'image':
-        return `<img src="${props.src || ''}" alt="${props.alt || ''}" style="${styleString}" />`;
+        return `<img src="${props['src'] || ''}" alt="${props['alt'] || ''}" class="block-${block.id}" />`;
       case 'button':
-        return `<a href="${props.href || '#'}" target="${props.target || '_self'}" style="text-decoration: none; display: inline-block; ${styleString}">${props.label || ''}</a>`;
+        return `<a href="${props['href'] || '#'}" target="${props['target'] || '_self'}" class="block-${block.id}" style="text-decoration: none; display: inline-block; text-align: center;">${props['label'] || ''}</a>`;
+      case 'divider':
+        return `<hr class="block-${block.id}" style="border: none; border-top: 1px solid #e5e7eb;" />`;
+      case 'spacer':
+        return `<div class="block-${block.id}"></div>`;
       case 'section':
-        return `<div style="${styleString}"></div>`;
+        const childrenHtml = (block.children || []).map(child => this.renderBlockHTML(child)).join('\n');
+        return `<div class="block-${block.id}">${childrenHtml}</div>`;
       default:
         return '';
     }

@@ -9,5 +9,7 @@ router.post('/login', authController.login);
 router.get('/me', protect, authController.getMe);
 router.put('/profile', protect, authController.updateProfile);
 router.put('/change-password', protect, authController.changePassword);
+router.get('/tree', protect, authController.getTree);
+router.put('/tree', protect, authController.saveTree);
 
 module.exports = router;

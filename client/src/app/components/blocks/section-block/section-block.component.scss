@@ -1,0 +1,94 @@
+.section-block {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 150ms ease;
+  
+  // Premium shimmering load state backdrop for sections with video
+  &.has-video-bg {
+    background: linear-gradient(90deg, #1a1a24 25%, #2a2a3d 50%, #1a1a24 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+  }
+}
+
+.section-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+// Editor Floating Video Overlay controls
+.video-canvas-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(17, 17, 30, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  
+  button {
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 150ms ease;
+    outline: none;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+    
+    &.danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+      color: #f87171;
+    }
+  }
+  
+  .slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0 8px;
+    
+    span {
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 700;
+      min-width: 26px;
+      text-align: center;
+    }
+    
+    input[type="range"] {
+      width: 60px;
+      height: 4px;
+      accent-color: #3b82f6;
+      cursor: pointer;
+      outline: none;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

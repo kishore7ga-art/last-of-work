@@ -36,8 +36,14 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  treeStructure: {
+    type: Object,
+    default: null
   }
 });
+
+userSchema.index({ email: 1 }, { unique: true });
 
 userSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password')) {

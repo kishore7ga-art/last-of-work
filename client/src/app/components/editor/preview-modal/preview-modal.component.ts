@@ -41,7 +41,23 @@ import { PreviewComponent } from '../../preview/preview.component';
       </div>
       
       <div class="preview-content-area">
-        <div class="preview-frame" [style.width]="getDeviceWidth()">
+        <!-- Phone Mockup for Mobile Preview -->
+        <div *ngIf="store.previewMode() === 'mobile'" class="phone-frame animate-scale-in">
+          <div class="phone-notch-area">
+            <div class="phone-notch"></div>
+          </div>
+          
+          <div class="phone-screen-container">
+            <div class="preview-frame mobile-preview-frame">
+              <app-preview></app-preview>
+            </div>
+          </div>
+          
+          <div class="phone-home-indicator"></div>
+        </div>
+
+        <!-- Normal Frame for Desktop & Tablet Preview -->
+        <div *ngIf="store.previewMode() !== 'mobile'" class="preview-frame" [style.width]="getDeviceWidth()">
           <app-preview></app-preview>
         </div>
       </div>
@@ -55,15 +71,80 @@ import { PreviewComponent } from '../../preview/preview.component';
     .topbar-right { justify-content: flex-end; }
     .preview-label { font-size: 13px; font-weight: 600; color: #a1a1aa; }
     .device-toggle { display: flex; background: #1e1e2e; border: 1px solid #2a2a3d; border-radius: 6px; padding: 2px; }
-    .device-btn { width: 32px; height: 28px; display: grid; place-items: center; color: #a1a1aa; border-radius: 4px; transition: all 0.2s; }
+    .device-btn { width: 32px; height: 28px; display: grid; place-items: center; color: #a1a1aa; border-radius: 4px; transition: all 0.2s; background: transparent; border: none; cursor: pointer; }
     .device-btn:hover { color: white; }
     .device-btn.active { background: #3b82f6; color: white; }
-    .topbar-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #a1a1aa; padding: 6px 12px; border-radius: 6px; transition: all 0.2s; background: rgba(255,255,255,0.05); }
+    .topbar-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #a1a1aa; padding: 6px 12px; border-radius: 6px; transition: all 0.2s; background: rgba(255,255,255,0.05); border: none; cursor: pointer; }
     .topbar-btn:hover { color: white; background: rgba(255,255,255,0.1); }
-    .topbar-icon-btn { display: grid; place-items: center; width: 32px; height: 32px; color: #a1a1aa; border-radius: 6px; transition: all 0.2s; }
+    .topbar-icon-btn { display: grid; place-items: center; width: 32px; height: 32px; color: #a1a1aa; border-radius: 6px; transition: all 0.2s; background: transparent; border: none; cursor: pointer; }
     .topbar-icon-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-    .preview-content-area { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 24px; }
+    .preview-content-area { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 24px; align-items: center; }
     .preview-frame { background: white; border-radius: 8px; overflow: hidden; min-height: 100%; box-shadow: 0 8px 48px rgba(0,0,0,0.5); transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    
+    /* Phone frame simulation styles inside preview */
+    .phone-frame {
+      width: 390px;
+      background: #11111e;
+      border: 12px solid #2a2a3d;
+      border-radius: 36px;
+      height: 760px;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .phone-notch-area {
+      height: 24px;
+      width: 100%;
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 8;
+    }
+    .phone-notch {
+      width: 130px;
+      height: 18px;
+      background: #2a2a3d;
+      border-radius: 0 0 14px 14px;
+    }
+    .phone-screen-container {
+      flex: 1;
+      width: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-top: 24px;
+      padding-bottom: 20px;
+      background: white;
+    }
+    .mobile-preview-frame {
+      min-height: 100%;
+      width: 100% !important;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .phone-home-indicator {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 4px;
+      background: #3f3f5a;
+      border-radius: 999px;
+      z-index: 8;
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.96) translateY(12px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
   `]
 })
 export class PreviewModalComponent {

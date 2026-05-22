@@ -1,0 +1,72 @@
+<div class="video-bg-wrapper">
+
+  @if (isMobile()) {
+    @if (video.mobileFallbackImage) {
+      <img
+        [src]="video.mobileFallbackImage"
+        class="video-fallback"
+        alt="Section mobile background"
+      />
+    } @else if (video.fallbackImage) {
+      <img
+        [src]="video.fallbackImage"
+        class="video-fallback"
+        alt="Section background"
+      />
+    }
+  } @else {
+    <!-- YOUTUBE VIDEO BACKGROUND -->
+    @if (video.type === 'youtube' && video.youtubeId && !showFallback()) {
+      <div class="video-iframe-wrapper">
+        <iframe
+          [src]="safeEmbedUrl()"
+          class="video-iframe"
+          frameborder="0"
+          allow="autoplay; fullscreen"
+          [title]="'Video background'"
+          loading="lazy">
+        </iframe>
+      </div>
+    }
+
+    <!-- MP4 VIDEO BACKGROUND -->
+    @if (video.type === 'mp4' && video.mp4Url && !showFallback()) {
+      <video
+        class="video-mp4"
+        [src]="video.mp4Url"
+        [autoplay]="video.autoplay"
+        [loop]="video.loop"
+        [muted]="video.muted"
+        [playbackRate]="video.playbackSpeed"
+        playsinline
+        preload="auto"
+        (error)="onVideoError()">
+      </video>
+    }
+
+    <!-- FALLBACK IMAGE (shown if video fails) -->
+    @if (showFallback() && video.fallbackImage) {
+      <img
+        [src]="video.fallbackImage"
+        class="video-fallback"
+        alt="Section background"
+      />
+    }
+  }
+
+  <!-- OVERLAY -->
+  @if (video.overlayEnabled) {
+    <div 
+      class="video-overlay"
+      [ngStyle]="overlayStyle()">
+    </div>
+  }
+
+  <!-- EDITOR INDICATOR (shown only in editor) -->
+  @if (isEditing) {
+    <div class="video-editor-badge">
+      🎥 Video Background
+    </div>
+  }
+
+</div>

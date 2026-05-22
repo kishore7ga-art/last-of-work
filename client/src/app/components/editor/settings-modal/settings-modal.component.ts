@@ -48,30 +48,92 @@ import { LucideAngularModule } from 'lucide-angular';
 
             <!-- SEO Tab -->
             <div *ngSwitchCase="'seo'" class="tab-pane">
-              <label>
-                <span>Meta Title</span>
-                <input type="text" [ngModel]="store.metaTitle()" (ngModelChange)="store.updatePageMetadata('metaTitle', $event)" placeholder="Title for search engines">
-              </label>
-              <label>
-                <span>Meta Description</span>
-                <textarea rows="3" [ngModel]="store.metaDescription()" (ngModelChange)="store.updatePageMetadata('metaDescription', $event)" placeholder="Description for search results"></textarea>
-              </label>
-              <label>
-                <span>OG Image URL</span>
-                <input type="text" [ngModel]="store.ogImage()" (ngModelChange)="store.updatePageMetadata('ogImage', $event)" placeholder="https://...">
-              </label>
-              <label>
-                <span>Canonical URL</span>
-                <input type="text" [ngModel]="store.canonicalUrl()" (ngModelChange)="store.updatePageMetadata('canonicalUrl', $event)" placeholder="https://...">
-              </label>
+              <!-- Meta Title -->
+              <div class="field">
+                <label>Meta Title
+                  <span class="char-count">
+                    {{ store.seoSettings().metaTitle.length }}/60
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  [value]="store.seoSettings().metaTitle"
+                  (input)="updateSEO('metaTitle', $event)"
+                  maxlength="60"
+                  placeholder="Page title for search engines"
+                />
+              </div>
 
-              <!-- Google Search Preview -->
+              <!-- Meta Description -->
+              <div class="field">
+                <label>Meta Description
+                  <span class="char-count"
+                    [class.over]="store.seoSettings().metaDescription.length > 160">
+                    {{ store.seoSettings().metaDescription.length }}/160
+                  </span>
+                </label>
+                <textarea
+                  [value]="store.seoSettings().metaDescription"
+                  (input)="updateSEO('metaDescription', $event)"
+                  maxlength="160"
+                  rows="3"
+                  placeholder="Description for search engines"
+                ></textarea>
+              </div>
+
+              <!-- OG Image -->
+              <div class="field">
+                <label>Social Share Image (OG Image)</label>
+                <input
+                  type="url"
+                  [value]="store.seoSettings().ogImage"
+                  (input)="updateSEO('ogImage', $event)"
+                  placeholder="https://..."
+                />
+                @if (store.seoSettings().ogImage) {
+                  <img 
+                    [src]="store.seoSettings().ogImage"
+                    class="og-preview"
+                    alt="OG Image preview"
+                  />
+                }
+              </div>
+
+              <!-- Canonical URL -->
+              <div class="field">
+                <label>Canonical URL</label>
+                <input
+                  type="url"
+                  [value]="store.seoSettings().canonicalUrl"
+                  (input)="updateSEO('canonicalUrl', $event)"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <!-- Keywords -->
+              <div class="field">
+                <label>Keywords</label>
+                <input
+                  type="text"
+                  [value]="store.seoSettings().keywords"
+                  (input)="updateSEO('keywords', $event)"
+                  placeholder="keyword1, keyword2, keyword3"
+                />
+              </div>
+
+              <!-- Live Google preview -->
               <div class="seo-preview">
                 <span class="preview-label">Search Preview:</span>
                 <div class="google-result">
-                  <div class="g-url">{{ store.canonicalUrl() || 'https://example.com' }}</div>
-                  <div class="g-title">{{ store.metaTitle() || store.pageTitle() || 'Your Page Title' }}</div>
-                  <div class="g-desc">{{ store.metaDescription() || 'Your page meta description will appear here in search results.' }}</div>
+                  <div class="g-url">
+                    yourdomain.com/{{ store.pageSlug() }}
+                  </div>
+                  <div class="g-title">
+                    {{ store.seoSettings().metaTitle || store.pageTitle() }}
+                  </div>
+                  <div class="g-desc">
+                    {{ store.seoSettings().metaDescription || 'No description set' }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -146,7 +208,10 @@ import { LucideAngularModule } from 'lucide-angular';
     .tab-pane { display: flex; flex-direction: column; gap: 16px; animation: fadeIn 0.2s; }
     
     label { display: flex; flex-direction: column; gap: 6px; }
-    label span { font-size: 11px; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em; }
+    label span.char-count { font-size: 10px; color: #a1a1aa; font-weight: normal; float: right; text-transform: none; letter-spacing: normal; }
+    label span.char-count.over { color: #ef4444; }
+    label { font-size: 11px; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em; }
+    .og-preview { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-top: 8px; border: 1px solid #2a2a3d; }
     input[type="text"], input[type="email"], select, textarea { width: 100%; background: #0a0a0f; border: 1px solid #2a2a3d; border-radius: 6px; padding: 10px 14px; color: white; font-size: 14px; transition: 0.2s; outline: none; }
     input[type="text"]:focus, textarea:focus, select:focus { border-color: #3b82f6; }
     input[type="color"] { width: 100%; height: 36px; border: 1px solid #2a2a3d; border-radius: 6px; background: #0a0a0f; padding: 4px; cursor: pointer; }
@@ -194,6 +259,11 @@ export class SettingsModalComponent {
     this.store.updateGlobalStyles({ [key]: value } as any);
   }
 
+  updateSEO(field: string, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.store.updateSEO({ [field]: value });
+  }
+
   saveSettings() {
     const pageId = this.store.activePageId();
     if (!pageId || pageId === 'temp' || pageId === 'new') {
@@ -204,9 +274,7 @@ export class SettingsModalComponent {
 
     this.pageApi.updatePage(pageId, {
       title: this.store.pageTitle(),
-      metaTitle: this.store.metaTitle(),
-      metaDescription: this.store.metaDescription(),
-      ogImage: this.store.ogImage(),
+      seo: this.store.seoSettings(),
       canonicalUrl: this.store.canonicalUrl(),
       customDomain: this.store.customDomain(),
       globalStyles: this.store.globalStyles()

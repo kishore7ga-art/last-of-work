@@ -5,6 +5,9 @@ import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { PageApiService, Page } from '../../services/page-api.service';
 import { AuthService } from '../../services/auth.service';
+import { WorkspaceApiService, Workspace } from '../../services/workspace-api.service';
+import { ActivatedRoute } from '@angular/router';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -15,17 +18,38 @@ import { AuthService } from '../../services/auth.service';
     <main class="min-h-screen bg-[#0a0a0f] text-white">
       <header class="border-b border-[#232336] bg-[#0f0f17]/95">
         <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">MyBuilder</p>
-            <h1 class="mt-1 text-3xl font-bold">My Pages</h1>
+          <div class="flex items-center gap-8">
+            <button 
+              (click)="dashboardTab.set('pages')" 
+              [class.text-blue-400]="dashboardTab() === 'pages'" 
+              [class.border-blue-400]="dashboardTab() === 'pages'"
+              class="text-2xl font-bold pb-1 border-b-2 border-transparent transition-colors">
+              My Pages
+            </button>
+            <button 
+              (click)="dashboardTab.set('workspaces')" 
+              [class.text-blue-400]="dashboardTab() === 'workspaces'" 
+              [class.border-blue-400]="dashboardTab() === 'workspaces'"
+              class="text-2xl font-bold pb-1 border-b-2 border-transparent transition-colors">
+              Workspaces
+            </button>
           </div>
 
           <div class="flex items-center gap-3">
             <button
+              *ngIf="dashboardTab() === 'pages'"
               (click)="openCreateModal()"
               class="inline-flex h-11 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:translate-y-[-1px]">
               <lucide-icon name="plus" [size]="18"></lucide-icon>
               <span>New Page</span>
+            </button>
+
+            <button
+              *ngIf="dashboardTab() === 'workspaces'"
+              (click)="createWorkspaceModalOpen.set(true)"
+              class="inline-flex h-11 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:translate-y-[-1px]">
+              <lucide-icon name="plus" [size]="18"></lucide-icon>
+              <span>New Workspace</span>
             </button>
 
             <div class="relative">
@@ -56,55 +80,103 @@ import { AuthService } from '../../services/auth.service';
           {{ error() }}
         </div>
 
-        <div *ngIf="!loading() && !error() && pages().length === 0" class="grid min-h-[56vh] place-items-center rounded-2xl border border-dashed border-[#2a2a3d] bg-[#101018] p-8 text-center">
-          <div>
-            <div class="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-blue-500/10 text-blue-300">
-              <lucide-icon name="file-text" [size]="34"></lucide-icon>
+        <!-- Pages Tab View -->
+        <ng-container *ngIf="dashboardTab() === 'pages'">
+          <div *ngIf="!loading() && !error() && pages().length === 0" class="grid min-h-[56vh] place-items-center rounded-2xl border border-dashed border-[#2a2a3d] bg-[#101018] p-8 text-center w-full">
+            <div>
+              <div class="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-blue-500/10 text-blue-300">
+                <lucide-icon name="file-text" [size]="34"></lucide-icon>
+              </div>
+              <h2 class="text-2xl font-bold">No pages yet</h2>
+              <p class="mt-2 text-sm text-gray-400">Create your first page to get started.</p>
+              <button
+                (click)="openCreateModal()"
+                class="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-5 text-sm font-semibold">
+                <lucide-icon name="plus" [size]="18"></lucide-icon>
+                <span>Create Page</span>
+              </button>
             </div>
-            <h2 class="text-2xl font-bold">No pages yet</h2>
-            <p class="mt-2 text-sm text-gray-400">Create your first page to get started.</p>
-            <button
-              (click)="openCreateModal()"
-              class="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-5 text-sm font-semibold">
-              <lucide-icon name="plus" [size]="18"></lucide-icon>
-              <span>Create Page</span>
-            </button>
           </div>
-        </div>
 
-        <div *ngIf="!loading() && !error() && pages().length > 0" class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <article
-            *ngFor="let page of pages(); trackBy: trackByPageId"
-            (click)="editPage(page._id)"
-            class="group relative cursor-pointer overflow-hidden rounded-xl border border-[#232336] bg-[#111118] shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:border-blue-500/60">
-            <div class="relative h-40 overflow-hidden bg-gradient-to-br from-blue-600 via-violet-600 to-fuchsia-600">
-              <img *ngIf="page.thumbnail" [src]="page.thumbnail" [alt]="page.title" class="h-full w-full object-cover" />
-              <div *ngIf="!page.thumbnail" class="grid h-full place-items-center text-5xl font-black text-white/75">
-                {{ pageInitials(page.title) }}
+          <div *ngIf="!loading() && !error() && pages().length > 0" class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 w-full">
+            <article
+              *ngFor="let page of pages(); trackBy: trackByPageId"
+              (click)="editPage(page._id)"
+              class="group relative cursor-pointer overflow-hidden rounded-xl border border-[#232336] bg-[#111118] shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:border-blue-500/60">
+              <div class="relative h-40 overflow-hidden bg-gradient-to-br from-blue-600 via-violet-600 to-fuchsia-600">
+                <img *ngIf="page.thumbnail" [src]="page.thumbnail" [alt]="page.title" class="h-full w-full object-cover" />
+                <div *ngIf="!page.thumbnail" class="grid h-full place-items-center text-5xl font-black text-white/75">
+                  {{ pageInitials(page.title) }}
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center gap-2 bg-black/45 opacity-0 transition group-hover:opacity-100">
+                  <button (click)="editPage(page._id, $event)" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold hover:bg-blue-500">Edit</button>
+                  <button (click)="duplicatePage(page, $event)" class="grid h-9 w-9 place-items-center rounded-lg bg-white/15 hover:bg-white/25" title="Duplicate">
+                    <lucide-icon name="copy" [size]="16"></lucide-icon>
+                  </button>
+                  <button (click)="deletePage(page._id, $event)" class="grid h-9 w-9 place-items-center rounded-lg bg-red-500/80 hover:bg-red-500" title="Delete">
+                    <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+                  </button>
+                </div>
               </div>
-              <div class="absolute inset-0 flex items-center justify-center gap-2 bg-black/45 opacity-0 transition group-hover:opacity-100">
-                <button (click)="editPage(page._id, $event)" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold hover:bg-blue-500">Edit</button>
-                <button (click)="duplicatePage(page, $event)" class="grid h-9 w-9 place-items-center rounded-lg bg-white/15 hover:bg-white/25" title="Duplicate">
-                  <lucide-icon name="copy" [size]="16"></lucide-icon>
-                </button>
-                <button (click)="deletePage(page._id, $event)" class="grid h-9 w-9 place-items-center rounded-lg bg-red-500/80 hover:bg-red-500" title="Delete">
-                  <lucide-icon name="trash-2" [size]="16"></lucide-icon>
-                </button>
+
+              <div class="p-5">
+                <div class="flex items-start justify-between gap-3">
+                  <h3 class="min-w-0 truncate text-lg font-bold">{{ page.title }}</h3>
+                  <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [ngClass]="page.published ? 'bg-emerald-500/15 text-emerald-300' : 'bg-gray-500/15 text-gray-300'">
+                    {{ page.published ? 'Published' : 'Draft' }}
+                  </span>
+                </div>
+                <p class="mt-2 line-clamp-2 min-h-10 text-sm text-gray-400">{{ page.description || 'No description yet.' }}</p>
+                <p class="mt-4 text-xs text-gray-500">Last edited {{ page.updatedAt | date:'medium' }}</p>
               </div>
+            </article>
+          </div>
+        </ng-container>
+
+        <!-- Workspaces Tab View -->
+        <ng-container *ngIf="dashboardTab() === 'workspaces'">
+          <div *ngIf="!loading() && workspaces().length === 0" class="grid min-h-[56vh] place-items-center rounded-2xl border border-dashed border-[#2a2a3d] bg-[#101018] p-8 text-center w-full">
+            <div>
+              <div class="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-300">
+                <lucide-icon name="users" [size]="34"></lucide-icon>
+              </div>
+              <h2 class="text-2xl font-bold">No workspaces yet</h2>
+              <p class="mt-2 text-sm text-gray-400">Create a collaborative team workspace to build websites together in real-time!</p>
+              <button
+                (click)="createWorkspaceModalOpen.set(true)"
+                class="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-5 text-sm font-semibold">
+                <lucide-icon name="plus" [size]="18"></lucide-icon>
+                <span>Create Workspace</span>
+              </button>
             </div>
+          </div>
 
-            <div class="p-5">
-              <div class="flex items-start justify-between gap-3">
-                <h3 class="min-w-0 truncate text-lg font-bold">{{ page.title }}</h3>
-                <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [ngClass]="page.published ? 'bg-emerald-500/15 text-emerald-300' : 'bg-gray-500/15 text-gray-300'">
-                  {{ page.published ? 'Published' : 'Draft' }}
+          <div *ngIf="!loading() && workspaces().length > 0" class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 w-full">
+            <article
+              *ngFor="let ws of workspaces()"
+              (click)="openWorkspace(ws._id)"
+              class="group relative cursor-pointer overflow-hidden rounded-xl border border-[#232336] bg-[#111118] shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:border-indigo-500/60 p-6 flex flex-col justify-between min-h-[160px]">
+              <div>
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-lg text-white">
+                    {{ ws.name[0].toUpperCase() }}
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-bold text-white truncate max-w-[200px]">{{ ws.name }}</h3>
+                    <span class="text-[10px] text-indigo-300 font-semibold uppercase tracking-wider">{{ ws.plan }} Plan</span>
+                  </div>
+                </div>
+                <p class="mt-3 text-sm text-gray-400 line-clamp-2">{{ ws.description || 'No description yet.' }}</p>
+              </div>
+              <div class="mt-4 flex items-center justify-between border-t border-[#232336] pt-3 text-xs text-gray-500">
+                <span>{{ ws.members.length }} members</span>
+                <span class="text-indigo-400 font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  Enter Workspace <lucide-icon name="arrow-right" [size]="12"></lucide-icon>
                 </span>
               </div>
-              <p class="mt-2 line-clamp-2 min-h-10 text-sm text-gray-400">{{ page.description || 'No description yet.' }}</p>
-              <p class="mt-4 text-xs text-gray-500">Last edited {{ page.updatedAt | date:'medium' }}</p>
-            </div>
-          </article>
-        </div>
+            </article>
+          </div>
+        </ng-container>
       </section>
 
       <div *ngIf="createModalOpen()" class="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
@@ -149,6 +221,44 @@ import { AuthService } from '../../services/auth.service';
           </button>
         </form>
       </div>
+
+      <!-- Create Workspace Modal -->
+      <div *ngIf="createWorkspaceModalOpen()" class="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
+        <form (ngSubmit)="createNewWorkspace()" class="w-full max-w-md rounded-2xl border border-[#2a2a3d] bg-[#111118] p-6 shadow-2xl">
+          <div class="mb-5 flex items-center justify-between">
+            <h2 class="text-xl font-bold">New Workspace</h2>
+            <button type="button" (click)="createWorkspaceModalOpen.set(false)" class="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10">
+              <lucide-icon name="x" [size]="18"></lucide-icon>
+            </button>
+          </div>
+
+          <label class="block text-sm font-medium text-gray-300">
+            Workspace Name
+            <input
+              [(ngModel)]="newWorkspaceName"
+              name="name"
+              required
+              class="mt-2 h-11 w-full rounded-lg border border-[#2a2a3d] bg-[#0a0a0f] px-3 text-white outline-none focus:border-blue-500"
+              placeholder="My Team Workspace" />
+          </label>
+
+          <label class="mt-4 block text-sm font-medium text-gray-300">
+            Description
+            <textarea
+              [(ngModel)]="newWorkspaceDescription"
+              name="description"
+              rows="3"
+              class="mt-2 w-full resize-none rounded-lg border border-[#2a2a3d] bg-[#0a0a0f] px-3 py-3 text-white outline-none focus:border-blue-500"
+              placeholder="Optional workspace summary"></textarea>
+          </label>
+
+          <button
+            type="submit"
+            class="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 text-sm font-semibold">
+            <span>Create Workspace</span>
+          </button>
+        </form>
+      </div>
     </main>
   `
 })
@@ -156,20 +266,37 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private pageApi = inject(PageApiService);
   auth = inject(AuthService);
+  private workspaceApi = inject(WorkspaceApiService);
+  private route = inject(ActivatedRoute);
+  private toast = inject(ToastService);
 
   pages = signal<Page[]>([]);
+  workspaces = signal<Workspace[]>([]);
+  dashboardTab = signal<'pages' | 'workspaces'>('pages');
   loading = signal(true);
   creating = signal(false);
   error = signal('');
   modalError = signal('');
   createModalOpen = signal(false);
+  createWorkspaceModalOpen = signal(false);
   userMenuOpen = signal(false);
   newPageTitle = '';
   newPageDescription = '';
+  newWorkspaceName = '';
+  newWorkspaceDescription = '';
   skeletons = Array.from({ length: 6 });
 
   ngOnInit() {
     this.loadPages();
+    this.loadWorkspaces();
+
+    // Check for workspace invitation token
+    this.route.queryParams.subscribe(params => {
+      const token = params['token'];
+      if (token) {
+        this.acceptInvite(token);
+      }
+    });
   }
 
   loadPages() {
@@ -178,7 +305,9 @@ export class DashboardComponent implements OnInit {
 
     this.pageApi.getPages().subscribe({
       next: (pages) => {
-        this.pages.set(pages);
+        // filter out workspace-specific pages from the main/personal list if desired
+        // For simplicity: list pages that don't belong to a workspace
+        this.pages.set(pages.filter(p => !p.workspaceId));
         this.loading.set(false);
       },
       error: (err) => {
@@ -186,6 +315,56 @@ export class DashboardComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  loadWorkspaces() {
+    this.workspaceApi.getWorkspaces().subscribe({
+      next: (workspaces) => {
+        this.workspaces.set(workspaces);
+      },
+      error: (err) => {
+        this.toast.error('Could not load workspaces');
+      }
+    });
+  }
+
+  acceptInvite(token: string) {
+    this.workspaceApi.acceptInvite(token).subscribe({
+      next: (ws) => {
+        this.toast.success(`Successfully joined workspace: ${ws.name}`);
+        this.loadWorkspaces();
+        // Remove token from query parameters so it doesn't prompt again
+        this.router.navigate([], { queryParams: { token: null }, queryParamsHandling: 'merge' });
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Invitation is invalid or has expired.');
+      }
+    });
+  }
+
+  createNewWorkspace() {
+    if (!this.newWorkspaceName.trim()) return;
+
+    this.workspaceApi.createWorkspace({
+      name: this.newWorkspaceName.trim(),
+      description: this.newWorkspaceDescription.trim()
+    }).subscribe({
+      next: (ws) => {
+        this.toast.success('Workspace created successfully!');
+        this.createWorkspaceModalOpen.set(false);
+        this.newWorkspaceName = '';
+        this.newWorkspaceDescription = '';
+        this.loadWorkspaces();
+        this.router.navigate(['/workspace', ws._id]);
+      },
+      error: (err) => {
+        this.toast.error('Could not create workspace');
+      }
+    });
+  }
+
+  openWorkspace(id: string) {
+    this.router.navigate(['/workspace', id]);
   }
 
   openCreateModal() {

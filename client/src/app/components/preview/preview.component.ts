@@ -1,7 +1,7 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
-import { LucideAngularModule, X, Monitor, Tablet, Smartphone } from 'lucide-angular';
+import { LucideAngularModule } from 'lucide-angular';
 import { StorageService } from '../../services/storage.service';
 import { PageApiService } from '../../services/page-api.service';
 import { CanvasBlock, GlobalStyles } from '../../store/builder.models';
@@ -17,7 +17,7 @@ import { FormBlockComponent } from '../blocks/form-block/form-block.component';
 import { IconBlockComponent } from '../blocks/icon-block/icon-block.component';
 import { HtmlBlockComponent } from '../blocks/html-block/html-block.component';
 import { MapBlockComponent } from '../blocks/map-block/map-block.component';
-import { AnimateOnScrollDirective } from '../../directives/animate-on-scroll.directive';
+import { AnimateDirective } from '../../directives/animate.directive';
 
 @Component({
   selector: 'app-preview',
@@ -37,7 +37,7 @@ import { AnimateOnScrollDirective } from '../../directives/animate-on-scroll.dir
     IconBlockComponent,
     HtmlBlockComponent,
     MapBlockComponent,
-    AnimateOnScrollDirective
+    AnimateDirective
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -87,95 +87,114 @@ import { AnimateOnScrollDirective } from '../../directives/animate-on-scroll.dir
           [ngStyle]="getGlobalStyles()"
           [style.width]="getDeviceWidth()">
           
-          <ng-container *ngFor="let block of blocks(); trackBy: trackByFn">
-            <ng-container *ngIf="!block.hidden">
-              <div
-                animateOnScroll
-                [animationType]="block.props.animation || 'none'"
-                [animationDelay]="block.props.animationDelay || 0"
-                [animationDuration]="block.props.animationDuration || 600"
-                [ngSwitch]="block.type">
-                  <app-text-block 
-                    *ngSwitchCase="'text'" 
-                    [props]="block.props"
-                    [blockId]="block.id"
-                    [isHeading]="false">
-                  </app-text-block>
-                  
-                  <app-text-block 
-                    *ngSwitchCase="'heading'" 
-                    [props]="block.props"
-                    [blockId]="block.id"
-                    [isHeading]="true">
-                  </app-text-block>
-                  
-                  <app-image-block 
-                    *ngSwitchCase="'image'" 
-                    [props]="block.props">
-                  </app-image-block>
-                  
-                  <app-button-block 
-                    *ngSwitchCase="'button'" 
-                    [props]="block.props">
-                  </app-button-block>
+          <ng-container *ngFor="let block of visibleBlocks(); trackBy: trackByFn">
+            <div
+              [mbAnimate]="block.animation"
+              [ngSwitch]="block.type">
+                
+                <app-text-block 
+                  *ngSwitchCase="'text'" 
+                  [props]="getActiveProps(block)"
+                  [blockId]="block.id"
+                  [isHeading]="false">
+                </app-text-block>
+                
+                <app-text-block 
+                  *ngSwitchCase="'heading'" 
+                  [props]="getActiveProps(block)"
+                  [blockId]="block.id"
+                  [isHeading]="true">
+                </app-text-block>
+                
+                <app-image-block 
+                  *ngSwitchCase="'image'" 
+                  [props]="getActiveProps(block)">
+                </app-image-block>
+                
+                <app-button-block 
+                  *ngSwitchCase="'button'" 
+                  [props]="getActiveProps(block)">
+                </app-button-block>
 
-                  <app-divider-block
-                    *ngSwitchCase="'divider'"
-                    [props]="block.props">
-                  </app-divider-block>
+                <app-divider-block
+                  *ngSwitchCase="'divider'"
+                  [props]="getActiveProps(block)">
+                </app-divider-block>
 
-                  <app-spacer-block
-                    *ngSwitchCase="'spacer'"
-                    [props]="block.props">
-                  </app-spacer-block>
+                <app-spacer-block
+                  *ngSwitchCase="'spacer'"
+                  [props]="getActiveProps(block)">
+                </app-spacer-block>
 
-                  <app-video-block
-                    *ngSwitchCase="'video'"
-                    [props]="block.props">
-                  </app-video-block>
+                <app-video-block
+                  *ngSwitchCase="'video'"
+                  [props]="getActiveProps(block)">
+                </app-video-block>
 
-                  <app-columns-block
-                    *ngSwitchCase="'columns'"
-                    [props]="block.props">
-                  </app-columns-block>
+                <app-columns-block
+                  *ngSwitchCase="'columns'"
+                  [props]="getActiveProps(block)">
+                </app-columns-block>
 
-                  <app-card-block
-                    *ngSwitchCase="'card'"
-                    [props]="block.props">
-                  </app-card-block>
+                <app-card-block
+                  *ngSwitchCase="'card'"
+                  [props]="getActiveProps(block)">
+                </app-card-block>
 
-                  <app-form-block
-                    *ngSwitchCase="'form'"
-                    [props]="block.props">
-                  </app-form-block>
+                <app-form-block
+                  *ngSwitchCase="'form'"
+                  [props]="getActiveProps(block)">
+                </app-form-block>
 
-                  <input
-                    *ngSwitchCase="'input'"
-                    [type]="block.props.inputType || 'text'"
-                    [placeholder]="block.props.placeholder || 'Enter text...'"
-                    [ngStyle]="getInputStyles(block)" />
+                <input
+                  *ngSwitchCase="'input'"
+                  [type]="getActiveProps(block)['inputType'] || 'text'"
+                  [placeholder]="getActiveProps(block)['placeholder'] || 'Enter text...'"
+                  [ngStyle]="getInputStyles(block)" />
 
-                  <app-icon-block
-                    *ngSwitchCase="'icon'"
-                    [props]="block.props">
-                  </app-icon-block>
+                <app-icon-block
+                  *ngSwitchCase="'icon'"
+                  [props]="getActiveProps(block)">
+                </app-icon-block>
 
-                  <app-html-block
-                    *ngSwitchCase="'html'"
-                    [props]="block.props">
-                  </app-html-block>
+                <app-html-block
+                  *ngSwitchCase="'html'"
+                  [props]="getActiveProps(block)">
+                </app-html-block>
 
-                  <app-map-block
-                    *ngSwitchCase="'map'"
-                    [props]="block.props">
-                  </app-map-block>
-                  
-                  <div 
-                    *ngSwitchCase="'section'"
-                    [ngStyle]="getSectionStyles(block)">
-                  </div>
-              </div>
-            </ng-container>
+                <app-map-block
+                  *ngSwitchCase="'map'"
+                  [props]="getActiveProps(block)">
+                </app-map-block>
+                
+                <div 
+                  *ngSwitchCase="'section'"
+                  [ngStyle]="getSectionStyles(block)"
+                  [style.display]="getActiveProps(block)['display'] || 'block'"
+                  [style.flex-direction]="getActiveProps(block)['flexDirection']"
+                  [style.align-items]="getActiveProps(block)['alignItems']"
+                  [style.justify-content]="getActiveProps(block)['justifyContent']"
+                  [style.grid-template-columns]="getActiveProps(block)['gridColumns']"
+                  [style.gap]="getActiveProps(block)['gap']"
+                  [style.box-shadow]="getActiveProps(block)['shadow']"
+                  [style.border-radius]="getActiveProps(block)['borderRadius']">
+                  <ng-container *ngIf="block.children && block.children.length > 0">
+                    <div *ngFor="let child of block.children" [ngSwitch]="child.type" style="width: 100%;">
+                      <app-text-block *ngSwitchCase="'text'" [props]="getActiveProps(child)" [blockId]="child.id" [isHeading]="false"></app-text-block>
+                      <app-text-block *ngSwitchCase="'heading'" [props]="getActiveProps(child)" [blockId]="child.id" [isHeading]="true"></app-text-block>
+                      <app-image-block *ngSwitchCase="'image'" [props]="getActiveProps(child)"></app-image-block>
+                      <app-button-block *ngSwitchCase="'button'" [props]="getActiveProps(child)"></app-button-block>
+                      <app-divider-block *ngSwitchCase="'divider'" [props]="getActiveProps(child)"></app-divider-block>
+                      <app-spacer-block *ngSwitchCase="'spacer'" [props]="getActiveProps(child)"></app-spacer-block>
+                      <app-video-block *ngSwitchCase="'video'" [props]="getActiveProps(child)"></app-video-block>
+                      <app-icon-block *ngSwitchCase="'icon'" [props]="getActiveProps(child)"></app-icon-block>
+                      <app-html-block *ngSwitchCase="'html'" [props]="getActiveProps(child)"></app-html-block>
+                      <app-map-block *ngSwitchCase="'map'" [props]="getActiveProps(child)"></app-map-block>
+                      <input *ngSwitchCase="'input'" [type]="getActiveProps(child)['inputType'] || 'text'" [placeholder]="getActiveProps(child)['placeholder'] || 'Enter text...'" [ngStyle]="getInputStyles(child)" />
+                    </div>
+                  </ng-container>
+                </div>
+            </div>
           </ng-container>
 
         </div>
@@ -205,6 +224,20 @@ export class PreviewComponent implements OnInit {
   device = signal<'desktop' | 'tablet' | 'mobile'>('desktop');
   pageId: string | null = null;
 
+  isMobile = computed(() => this.device() === 'mobile');
+
+  visibleBlocks = computed(() => {
+    const raw = this.blocks().filter(block => this.isBlockVisible(block));
+    if (this.isMobile()) {
+      return [...raw].sort((a, b) => {
+        const orderA = a.mobileOrder !== undefined && a.mobileOrder !== null ? a.mobileOrder : 999999;
+        const orderB = b.mobileOrder !== undefined && b.mobileOrder !== null ? b.mobileOrder : 999999;
+        return orderA - orderB;
+      });
+    }
+    return raw;
+  });
+
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       this.pageId = params.get('id');
@@ -224,6 +257,24 @@ export class PreviewComponent implements OnInit {
         }
       }
     });
+  }
+
+  isBlockVisible(block: CanvasBlock): boolean {
+    if (block.hidden) return false;
+    if (this.device() === 'mobile') {
+      return block.visibility?.mobile !== false;
+    }
+    if (this.device() === 'tablet') {
+      return block.visibility?.tablet !== false;
+    }
+    return block.visibility?.desktop !== false;
+  }
+
+  getActiveProps(block: CanvasBlock): any {
+    if (this.device() === 'mobile' && block.mobileProps) {
+      return { ...block.props, ...block.mobileProps };
+    }
+    return block.props;
   }
 
   setDevice(mode: 'desktop' | 'tablet' | 'mobile') {
@@ -252,19 +303,23 @@ export class PreviewComponent implements OnInit {
   }
 
   getSectionStyles(block: CanvasBlock) {
-    const props = block.props;
+    const props = this.getActiveProps(block);
     return {
       'background-color': props.backgroundColor,
       'padding': props.padding,
       'min-height': props.minHeight,
       'width': props.width,
       'margin': props.margin,
-      'border': props.border
+      'border': props.border,
+      'border-radius': props.borderRadius,
+      background: props.gradientFrom && props.gradientTo 
+        ? `linear-gradient(135deg, ${props.gradientFrom}, ${props.gradientTo})` 
+        : (props.src ? `url(${props.src}) center/cover no-repeat` : undefined),
     };
   }
 
   getInputStyles(block: CanvasBlock) {
-    const props = block.props;
+    const props = this.getActiveProps(block);
     return {
       width: props.width,
       padding: props.padding,
