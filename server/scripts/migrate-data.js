@@ -8,10 +8,14 @@ try {
 require('dotenv').config();
 const mongoose = require('mongoose');
 
-const LOCAL_URI = 'mongodb://127.0.0.1:27018/mybuilder';
-const REMOTE_URI = process.env.MONGO_URI || 'mongodb+srv://admin:test123@cluster0.yvbc9ma.mongodb.net/mybuilder?retryWrites=true&w=majority&appName=Cluster0';
+const LOCAL_URI = process.env.LOCAL_MONGO_URI || 'mongodb://127.0.0.1:27017/mybuilder';
+const REMOTE_URI = process.env.MONGO_URI;
 
 async function migrate() {
+  if (!REMOTE_URI) {
+    throw new Error('MONGO_URI is required for remote migration');
+  }
+
   console.log('🔌 Connecting to databases...');
   
   const localConn = mongoose.createConnection(LOCAL_URI);

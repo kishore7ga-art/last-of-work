@@ -24,6 +24,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const isVercel = process.env.VERCEL === '1';
 
 app.use(helmet());
 
@@ -64,6 +65,61 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+const mongoOptions = {
+  maxPoolSize: 20,
+  minPoolSize: isVercel ? 0 : 5,
+  maxIdleTimeMS: 30000,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 20000,
+  connectTimeoutMS: 10000,
+  heartbeatFrequencyMS: 10000,
+  retryWrites: true,
+  retryReads: true,
+  w: 'majority',
+  readPreference: 'primaryPreferred',
+  compressors: ['zlib'],
+};
+
+let mongoConnectionPromise = null;
+
+async function ensureMongoConnection() {
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI not set in environment variables');
+  }
+
+  if (mongoose.connection.readyState === 1) {
+    app.set('mongooseState', { connected: true, name: mongoose.connection.name });
+    return mongoose.connection;
+  }
+
+  if (!mongoConnectionPromise) {
+    mongoConnectionPromise = mongoose.connect(process.env.MONGO_URI, mongoOptions)
+      .then(() => {
+        console.log('MongoDB connected');
+        app.set('mongooseState', { connected: true, name: mongoose.connection.name });
+        return mongoose.connection;
+      })
+      .catch((error) => {
+        mongoConnectionPromise = null;
+        app.set('mongooseState', { connected: false });
+        throw error;
+      });
+  }
+
+  return mongoConnectionPromise;
+}
+
+app.use('/api', async (req, res, next) => {
+  if (req.path === '/health') return next();
+
+  try {
+    await ensureMongoConnection();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -114,7 +170,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 
-const server = http.createServer(app);
+const server = isVercel ? null : http.createServer(app);
+if (server) {
 // Start listening immediately so the API is reachable even if DB connection is pending
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
@@ -197,10 +254,11 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.userId);
   });
 });
+}
 
 if (!process.env.MONGO_URI) {
   console.error('❌ MONGO_URI not set in .env');
-  process.exit(1);
+  console.error('MONGO_URI not set in environment variables');
 }
 
 // Auto-reconnect with exponential backoff
@@ -237,7 +295,9 @@ function connectWithRetry() {
       setTimeout(connectWithRetry, delay);
     });
 }
-connectWithRetry();
+if (!isVercel && process.env.MONGO_URI) {
+  connectWithRetry();
+}
 
 mongoose.connection.on('disconnected', () => {
   console.log('⚠️ MongoDB disconnected');
@@ -252,6 +312,14 @@ mongoose.connection.on('reconnected', () => {
 // Graceful shutdown handlers - active and ready
 const gracefulShutdown = (signal) => {
   console.log(`🔌 [Shutdown] Received ${signal}. Starting graceful shutdown...`);
+  if (!server) {
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed.');
+      process.exit(0);
+    });
+    return;
+  }
+
   server.close(() => {
     console.log('HTTP server closed.');
     mongoose.connection.close(false, () => {

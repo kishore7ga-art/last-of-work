@@ -1,16 +1,25 @@
 // server/src/controllers/dbController.js
 const mongoose = require('mongoose');
 
-exports.checkConnection = (req, res) => {
-  const state = req.app.get('mongooseState') || {};
-  if (state.connected) {
-    return res.json({ success: true, status: 'connected', db: state.name || '' });
+exports.checkConnection = async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({ success: false, status: 'disconnected' });
+    }
+
+    await mongoose.connection.db.admin().ping();
+    return res.json({
+      success: true,
+      status: 'connected',
+      db: mongoose.connection.name || ''
+    });
+  } catch (error) {
+    next(error);
   }
-  return res.status(500).json({ success: false, status: 'disconnected' });
 };
 
 exports.runMigration = async (req, res, next) => {
-  const LOCAL_URI = 'mongodb://127.0.0.1:27018/mybuilder';
+  const LOCAL_URI = process.env.LOCAL_MONGO_URI || 'mongodb://127.0.0.1:27017/mybuilder';
   const REMOTE_URI = process.env.MONGO_URI;
 
   if (!REMOTE_URI) {
