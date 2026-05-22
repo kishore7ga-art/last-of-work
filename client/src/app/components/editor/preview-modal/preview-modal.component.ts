@@ -1,4 +1,4 @@
-import { Component, inject, EventEmitter, Output } from '@angular/core';
+import { Component, inject, EventEmitter, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BuilderStore } from '../../../store/builder.store';
 import { PageApiService } from '../../../services/page-api.service';
@@ -10,6 +10,7 @@ import { PreviewComponent } from '../../preview/preview.component';
   selector: 'app-preview-modal',
   standalone: true,
   imports: [CommonModule, LucideAngularModule, PreviewComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="preview-overlay">
       <div class="preview-topbar">

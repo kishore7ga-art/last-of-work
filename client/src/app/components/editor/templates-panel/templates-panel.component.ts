@@ -8,6 +8,7 @@ import { BuilderStore } from '../../../store/builder.store';
 import { ToastService } from '../../../services/toast.service';
 import { TEMPLATE_GROUPS, SectionTemplate, TemplateCategory } from '../../../data/templates.data';
 import { CanvasBlock } from '../../../store/builder.models';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-templates-panel',
@@ -21,6 +22,7 @@ export class TemplatesPanelComponent implements OnInit {
   store = inject(BuilderStore);
   private toast = inject(ToastService);
   private sanitizer = inject(DomSanitizer);
+  private templateHtmlCache = new Map<string, SafeHtml>();
 
   hoveredId = signal<string | null>(null);
 
@@ -58,7 +60,9 @@ export class TemplatesPanelComponent implements OnInit {
         this.favorites.set(JSON.parse(favs));
       }
     } catch (e) {
-      console.error('Error loading favorite templates', e);
+      if (!environment.production) {
+        console.error('Error loading favorite templates', e);
+      }
     }
   }
 
@@ -70,7 +74,9 @@ export class TemplatesPanelComponent implements OnInit {
         this.recentIds.set(JSON.parse(rec));
       }
     } catch (e) {
-      console.error('Error loading recent templates', e);
+      if (!environment.production) {
+        console.error('Error loading recent templates', e);
+      }
     }
   }
 
@@ -159,9 +165,24 @@ export class TemplatesPanelComponent implements OnInit {
 
   // Add template blocks to canvas
   addTemplate(template: SectionTemplate) {
-    this.store.addTemplateBlocks(template.blocks);
+    const timestamp = Date.now();
+    const newBlocks = template.blocks.map((block, index) =>
+      this.cloneTemplateBlock(block, `${timestamp}-${index}`)
+    );
+
+    this.store.addMultipleBlocks(newBlocks, undefined, 'template-added');
     this.trackRecent(template.id);
     this.toast.success(`✓ ${template.name} added to canvas`);
+  }
+
+  private cloneTemplateBlock(block: CanvasBlock, idSeed: string): CanvasBlock {
+    const cloned = JSON.parse(JSON.stringify(block)) as CanvasBlock;
+    const refresh = (item: CanvasBlock, suffix: string) => {
+      item.id = `block-${idSeed}-${suffix}-${Math.random().toString(36).slice(2, 7)}`;
+      item.children?.forEach((child, childIndex) => refresh(child, `${suffix}-${childIndex}`));
+    };
+    refresh(cloned, '0');
+    return cloned;
   }
 
   // Clear search bar
@@ -193,6 +214,9 @@ export class TemplatesPanelComponent implements OnInit {
   }
 
   getTemplateHTML(template: SectionTemplate): SafeHtml {
+    const cached = this.templateHtmlCache.get(template.id);
+    if (cached) return cached;
+
     let html = '<div style="font-family:Inter,sans-serif;width:100%;overflow:hidden;">'
     
     template.blocks.forEach(block => {
@@ -201,7 +225,9 @@ export class TemplatesPanelComponent implements OnInit {
     
     html += '</div>'
     
-    return this.sanitizer.bypassSecurityTrustHtml(html)
+    const safeHtml = this.sanitizer.bypassSecurityTrustHtml(html)
+    this.templateHtmlCache.set(template.id, safeHtml)
+    return safeHtml
   }
 
   renderBlockPreview(block: CanvasBlock): string {

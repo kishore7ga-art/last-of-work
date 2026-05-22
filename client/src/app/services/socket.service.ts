@@ -29,11 +29,15 @@ export class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('✅ Socket connected');
+      if (!environment.production) {
+        console.log('Socket connected');
+      }
     });
 
     this.socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
+      if (!environment.production) {
+        console.log('Socket disconnected');
+      }
     });
   }
 

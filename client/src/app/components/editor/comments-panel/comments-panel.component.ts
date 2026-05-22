@@ -1,4 +1,4 @@
-import { Component, inject, Input, Output, EventEmitter, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, Input, Output, EventEmitter, signal, OnInit, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -11,6 +11,7 @@ import { SocketService } from '../../../services/socket.service';
   selector: 'app-comments-panel',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideAngularModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <aside class="comments-panel">
       <!-- Header -->

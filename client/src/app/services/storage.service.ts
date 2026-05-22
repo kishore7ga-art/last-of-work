@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { CanvasBlock } from '../store/builder.models';
 import { BuilderStore } from '../store/builder.store';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -13,9 +14,13 @@ export class StorageService {
   savePage(blocks: CanvasBlock[]): void {
     try {
       localStorage.setItem(this.CANVAS_KEY, JSON.stringify(blocks));
-      console.log('Page saved to localStorage');
+      if (!environment.production) {
+        console.log('Page saved to localStorage');
+      }
     } catch (e) {
-      console.error('Failed to save page to localStorage', e);
+      if (!environment.production) {
+        console.error('Failed to save page to localStorage', e);
+      }
     }
   }
 
@@ -26,7 +31,9 @@ export class StorageService {
         return JSON.parse(data);
       }
     } catch (e) {
-      console.error('Failed to load page from localStorage', e);
+      if (!environment.production) {
+        console.error('Failed to load page from localStorage', e);
+      }
     }
     return null;
   }

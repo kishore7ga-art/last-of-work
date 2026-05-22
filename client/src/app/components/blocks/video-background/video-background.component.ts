@@ -1,4 +1,4 @@
-import { Component, Input, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
 import { VideoBackground } from '../../../store/builder.models';
@@ -8,6 +8,7 @@ import { VideoService } from '../../../services/video.service';
   selector: 'app-video-background',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './video-background.component.html',
   styleUrls: ['./video-background.component.scss']
 })

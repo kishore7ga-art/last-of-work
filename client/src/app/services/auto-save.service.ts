@@ -5,6 +5,7 @@ import { ThemeService } from './theme.service';
 import { ToastService } from './toast.service';
 import { firstValueFrom } from 'rxjs';
 import { CanvasBlock } from '../store/builder.models';
+import { environment } from '../../environments/environment';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'offline';
 
@@ -94,7 +95,9 @@ export class AutoSaveService {
 
   // Call this whenever ANY change happens
   triggerSave(reason: string = 'unknown'): void {
-    console.log('Auto-save triggered:', reason);
+    if (!environment.production) {
+      console.log('Auto-save triggered:', reason);
+    }
     if (reason.includes('block') || reason === 'unknown' || reason === 'init' || reason === 'force') 
       this.blocksChanged = true;
     if (reason === 'title-changed' || reason === 'unknown' || reason === 'init' || reason === 'force') 

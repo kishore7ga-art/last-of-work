@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal, computed, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { PageApiService, Page } from '../../services/page-api.service';
@@ -40,6 +40,7 @@ import { Meta, Title } from '@angular/platform-browser';
     SectionBlockComponent,
     AnimateDirective
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div *ngIf="loading()" class="min-h-screen bg-gray-900 flex items-center justify-center text-white">
       <div class="text-center">

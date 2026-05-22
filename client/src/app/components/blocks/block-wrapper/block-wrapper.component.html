@@ -1,28 +1,33 @@
 <div
-  class="group relative min-h-8"
-  [class.outline]="isSelected || isHovered"
-  [class.outline-2]="isSelected"
-  [class.outline-blue-500]="isSelected"
-  [class.outline-dashed]="isHovered && !isSelected"
-  [class.outline-slate-400]="isHovered && !isSelected"
-  [class.opacity-45]="block.hidden"
-  (click)="onSelect($event)"
-  (mouseenter)="onMouseEnter()"
-  (mouseleave)="onMouseLeave()"
->
-  <div
-    *ngIf="isSelected"
-    class="absolute -top-8 left-0 z-20 flex h-7 items-center gap-2 rounded-t-md bg-blue-600 px-2 text-xs font-semibold text-white shadow-lg"
-  >
-    <lucide-icon name="move" size="14" class="cursor-grab" cdkDragHandle></lucide-icon>
-    <span class="capitalize">{{ block.type }}</span>
-    <button class="rounded p-1 hover:bg-blue-500" type="button" title="Duplicate" (click)="onDuplicate($event)">
-      <lucide-icon name="copy" size="13"></lucide-icon>
-    </button>
-    <button class="rounded p-1 text-red-100 hover:bg-red-500" type="button" title="Delete" (click)="onDelete($event)">
-      <lucide-icon name="trash-2" size="13"></lucide-icon>
-    </button>
+  class="wrapper-inner"
+  [mbAnimate]="mbAnimate"
+  [mbAnimatePreview]="isPreviewMode"
+  [attr.data-block-id]="block.id"
+  [class.has-video-selected]="isSelected() && block.type === 'section' && block.props.videoBackground?.enabled">
+
+  @if (isSelected()) {
+    <div class="block-controls">
+      <span class="toolbar-arrow"></span>
+      <button cdkDragHandle class="icon-btn drag-handle" type="button" title="Drag">
+        <lucide-icon name="grip-vertical" [size]="14"></lucide-icon>
+      </button>
+      <span class="block-type-label">{{ block.type }}</span>
+      <div class="block-actions">
+        <button class="icon-btn" type="button" (click)="duplicate($event)" title="Duplicate">
+          <lucide-icon name="copy" [size]="13"></lucide-icon>
+        </button>
+        <button class="icon-btn delete-btn" type="button" (click)="delete($event)" title="Delete">
+          <lucide-icon name="trash-2" [size]="13"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  }
+
+  <div class="block-content" [class.hidden-block]="block.hidden">
+    <ng-content></ng-content>
   </div>
 
-  <ng-content></ng-content>
+  @if (block.animation?.enabled) {
+    <span class="anim-badge">✦</span>
+  }
 </div>

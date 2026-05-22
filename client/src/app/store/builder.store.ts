@@ -3,7 +3,6 @@ import { BlockProps, BlockType, BuilderPageTab, CanvasBlock, GlobalStyles, Saved
 import { SocketService } from '../services/socket.service';
 import { AutoSaveService, SEOSettings, PageSettings } from '../services/auto-save.service';
 import { getDefaultProps } from '../utils/block-defaults';
-import { moveItemInArray } from '@angular/cdk/drag-drop';
 @Injectable({
   providedIn: 'root'
 })
@@ -11,6 +10,7 @@ export class BuilderStore {
   // State
   private socketService = inject(SocketService);
   private autoSave = inject(AutoSaveService);
+  private activePropsCache = new WeakMap<CanvasBlock, { props: BlockProps; mobileProps: BlockProps | null | undefined; value: BlockProps }>();
   
   blocks = signal<CanvasBlock[]>([]);
   pages = signal<BuilderPageTab[]>([]);
@@ -60,7 +60,7 @@ export class BuilderStore {
   });
 
   // Memoized block map for O(1) lookups
-  private blockMap = computed(() => {
+  private _blockMap = computed(() => {
     const map = new Map<string, CanvasBlock>();
     const fillMap = (list: CanvasBlock[]) => {
       list.forEach(b => {
@@ -73,24 +73,36 @@ export class BuilderStore {
   });
 
   // O(1) block lookup
+  getBlock(id: string): CanvasBlock | undefined {
+    return this._blockMap().get(id);
+  }
+
   getBlockById(id: string): CanvasBlock | undefined {
-    return this.blockMap().get(id);
+    return this.getBlock(id);
   }
 
   // Recursive updater helper to handle nested sections correctly
   private updateBlockInArray(blocks: CanvasBlock[], id: string, updater: (b: CanvasBlock) => CanvasBlock): CanvasBlock[] {
-    return blocks.map(b => {
+    let changed = false;
+    const nextBlocks = blocks.map(b => {
       if (b.id === id) {
+        changed = true;
         return updater(b);
       }
       if (b.children && b.children.length > 0) {
+        const nextChildren = this.updateBlockInArray(b.children, id, updater);
+        if (nextChildren === b.children) {
+          return b;
+        }
+        changed = true;
         return {
           ...b,
-          children: this.updateBlockInArray(b.children, id, updater)
+          children: nextChildren
         };
       }
       return b;
     });
+    return changed ? nextBlocks : blocks;
   }
 
   // Computed
@@ -111,6 +123,18 @@ export class BuilderStore {
   // Methods
   generateId(): string {
     return Math.random().toString(36).substr(2, 9);
+  }
+
+  private createBlock(type: BlockType): CanvasBlock {
+    return {
+      id: this.generateId(),
+      type,
+      props: getDefaultProps(type)
+    };
+  }
+
+  private queueAutoSave(reason: string): void {
+    queueMicrotask(() => this.autoSave.triggerSave(reason));
   }
 
   private cloneBlocks(blocks: CanvasBlock[]): CanvasBlock[] {
@@ -134,7 +158,7 @@ export class BuilderStore {
     // Remove future history if we are in the middle and making a new change
     const newHistory = currentHistory.slice(0, currentIndex + 1);
     
-    newHistory.push(this.cloneBlocks(newBlocks));
+    newHistory.push(newBlocks);
     
     // Keep max 50 states
     if (newHistory.length > 50) {
@@ -152,16 +176,12 @@ export class BuilderStore {
     if (!activeId) return;
 
     this.pages.update(pages =>
-      pages.map(page => page.id === activeId ? { ...page, blocks: this.cloneBlocks(blocks) } : page)
+      pages.map(page => page.id === activeId && page.blocks !== blocks ? { ...page, blocks } : page)
     );
   }
 
   addBlock(type: BlockType): void {
-    const newBlock: CanvasBlock = {
-      id: this.generateId(),
-      type,
-      props: getDefaultProps(type)
-    };
+    const newBlock = this.createBlock(type);
     
     const newBlocks = [...this.blocks(), newBlock];
     this.saveHistory(newBlocks);
@@ -171,36 +191,28 @@ export class BuilderStore {
       this.socketService.emitBlockAdded(this.activePageId()!, newBlock);
     }
     
-    this.autoSave.triggerSave('block-added');
+    this.queueAutoSave('block-added');
   }
 
   addBlockAtIndex(type: BlockType, index: number): void {
-    const newBlock: CanvasBlock = {
-      id: this.generateId(),
-      type,
-      props: getDefaultProps(type)
-    };
+    const newBlock = this.createBlock(type);
     
     const newBlocks = [...this.blocks()];
     newBlocks.splice(index, 0, newBlock);
     
     this.saveHistory(newBlocks);
     this.selectBlock(newBlock.id);
-    this.autoSave.triggerSave('block-added');
+    this.queueAutoSave('block-added');
   }
 
   addBlockAt(type: BlockType, index: number): void {
-    const newBlock: CanvasBlock = {
-      id: this.generateId(),
-      type,
-      props: getDefaultProps(type)
-    };
+    const newBlock = this.createBlock(type);
     const newBlocks = [...this.blocks()];
     newBlocks.splice(index, 0, newBlock);
     
     this.saveHistory(newBlocks);
     this.selectBlock(newBlock.id);
-    this.autoSave.triggerSave('block-added');
+    this.queueAutoSave('block-added');
   }
 
   addSavedComponentAtIndex(component: SavedComponent, index: number): void {
@@ -209,20 +221,33 @@ export class BuilderStore {
     newBlocks.splice(index, 0, newBlock);
     this.saveHistory(newBlocks);
     this.selectBlock(newBlock.id);
-    this.autoSave.triggerSave('component-added');
+    this.queueAutoSave('component-added');
   }
 
   selectBlock(id: string): void {
+    if (this.selectedBlockId() === id) return;
     this.selectedBlockId.set(id);
   }
 
   clearSelection(): void {
+    if (this.selectedBlockId() === null) return;
     this.selectedBlockId.set(null);
   }
 
   getActiveProps(block: CanvasBlock): BlockProps {
     if (this.editMode() === 'mobile' && block.mobileProps) {
-      return { ...block.props, ...block.mobileProps };
+      const cached = this.activePropsCache.get(block);
+      if (cached && cached.props === block.props && cached.mobileProps === block.mobileProps) {
+        return cached.value;
+      }
+
+      const value = { ...block.props, ...block.mobileProps };
+      this.activePropsCache.set(block, {
+        props: block.props,
+        mobileProps: block.mobileProps,
+        value
+      });
+      return value;
     }
     return block.props;
   }
@@ -259,7 +284,7 @@ export class BuilderStore {
       if (updatedBlock && this.activePageId()) {
         this.socketService.emitBlockUpdated(this.activePageId()!, updatedBlock);
       }
-      this.autoSave.triggerSave('block-updated');
+      this.queueAutoSave('block-updated');
     } else {
       this.updateBlockMobile(id, props);
     }
@@ -268,6 +293,15 @@ export class BuilderStore {
   updateBlockMobile(id: string, mobileProps: Partial<BlockProps>): void {
     const current = this.getBlockById(id);
     if (!current) return;
+
+    const activeMobileProps = current.mobileProps || {};
+    const updateKeys = Object.keys(mobileProps);
+    const hasChanged = updateKeys.length === 0
+      ? !current.mobileProps
+      : updateKeys.some(
+      key => activeMobileProps[key as keyof BlockProps] !== mobileProps[key as keyof BlockProps]
+    );
+    if (!hasChanged) return;
 
     const newBlocks = this.updateBlockInArray(this.blocks(), id, b => ({
       ...b,
@@ -282,12 +316,17 @@ export class BuilderStore {
     if (updatedBlock && this.activePageId()) {
       this.socketService.emitBlockUpdated(this.activePageId()!, updatedBlock);
     }
-    this.autoSave.triggerSave('block-mobile-updated');
+    this.queueAutoSave('block-mobile-updated');
   }
 
   updateBlockSharedProps(id: string, props: Partial<BlockProps>): void {
     const current = this.getBlockById(id);
     if (!current) return;
+
+    const hasChanged = Object.keys(props).some(
+      key => current.props[key as keyof BlockProps] !== props[key as keyof BlockProps]
+    );
+    if (!hasChanged) return;
 
     const newBlocks = this.updateBlockInArray(this.blocks(), id, b => ({
       ...b,
@@ -299,7 +338,7 @@ export class BuilderStore {
     if (updatedBlock && this.activePageId()) {
       this.socketService.emitBlockUpdated(this.activePageId()!, updatedBlock);
     }
-    this.autoSave.triggerSave('block-shared-updated');
+    this.queueAutoSave('block-shared-updated');
   }
 
   resetMobileProps(id: string): void {
@@ -317,7 +356,7 @@ export class BuilderStore {
     if (this.activePageId()) {
       this.socketService.emitBlockUpdated(this.activePageId()!, newBlocks[blockIndex]);
     }
-    this.autoSave.triggerSave('block-mobile-reset');
+    this.queueAutoSave('block-mobile-reset');
   }
 
   toggleBlockVisibility(id: string, device: 'desktop' | 'mobile' | 'tablet', visible: boolean): void {
@@ -340,7 +379,7 @@ export class BuilderStore {
     if (this.activePageId()) {
       this.socketService.emitBlockUpdated(this.activePageId()!, newBlocks[blockIndex]);
     }
-    this.autoSave.triggerSave('block-visibility-changed');
+    this.queueAutoSave('block-visibility-changed');
   }
 
   updateBlockMobileOrder(id: string, order: number | null): void {
@@ -358,7 +397,7 @@ export class BuilderStore {
     if (this.activePageId()) {
       this.socketService.emitBlockUpdated(this.activePageId()!, newBlocks[blockIndex]);
     }
-    this.autoSave.triggerSave('block-order-updated');
+    this.queueAutoSave('block-order-updated');
   }
 
   updateBlockMetadata(id: string, metadata: Partial<CanvasBlock>): void {
@@ -374,7 +413,7 @@ export class BuilderStore {
     };
 
     this.saveHistory(newBlocks);
-    this.autoSave.triggerSave('block-metadata-updated');
+    this.queueAutoSave('block-metadata-updated');
   }
 
   deleteBlock(id: string): void {
@@ -387,7 +426,7 @@ export class BuilderStore {
     if (this.activePageId()) {
       this.socketService.emitBlockDeleted(this.activePageId()!, id);
     }
-    this.autoSave.triggerSave('block-deleted');
+    this.queueAutoSave('block-deleted');
   }
 
   duplicateBlock(id: string): void {
@@ -407,14 +446,19 @@ export class BuilderStore {
     
     this.saveHistory(newBlocks);
     this.selectBlock(newBlock.id);
-    this.autoSave.triggerSave('block-duplicated');
+    this.queueAutoSave('block-duplicated');
   }
 
   reorderBlocks(previousIndex: number, currentIndex: number): void {
+    if (previousIndex === currentIndex) return;
+
     const newBlocks = [...this.blocks()];
-    moveItemInArray(newBlocks, previousIndex, currentIndex);
+    const [item] = newBlocks.splice(previousIndex, 1);
+    if (!item) return;
+
+    newBlocks.splice(currentIndex, 0, item);
     this.saveHistory(newBlocks);
-    this.autoSave.triggerSave('blocks-reordered');
+    this.queueAutoSave('blocks-reordered');
   }
 
   undo(): void {
@@ -422,10 +466,10 @@ export class BuilderStore {
     
     const newIndex = this.historyIndex() - 1;
     this.historyIndex.set(newIndex);
-    const blocks = this.cloneBlocks(this.history()[newIndex]);
+    const blocks = this.history()[newIndex];
     this.blocks.set(blocks);
     this.syncActivePageBlocks(blocks);
-    this.autoSave.triggerSave('undo');
+    this.queueAutoSave('undo');
   }
 
   redo(): void {
@@ -433,10 +477,10 @@ export class BuilderStore {
     
     const newIndex = this.historyIndex() + 1;
     this.historyIndex.set(newIndex);
-    const blocks = this.cloneBlocks(this.history()[newIndex]);
+    const blocks = this.history()[newIndex];
     this.blocks.set(blocks);
     this.syncActivePageBlocks(blocks);
-    this.autoSave.triggerSave('redo');
+    this.queueAutoSave('redo');
   }
 
   setPreviewMode(mode: 'desktop' | 'tablet' | 'mobile'): void {
@@ -459,26 +503,32 @@ export class BuilderStore {
       return cloned;
     });
 
+    return this.addMultipleBlocks(clonedBlocks, index, 'template-blocks-added');
+  }
+
+  addMultipleBlocks(blocks: CanvasBlock[], index?: number, reason = 'template-added'): string[] {
+    if (blocks.length === 0) return [];
+
     const newBlocks = [...this.blocks()];
     if (typeof index === 'number' && index >= 0) {
-      newBlocks.splice(index, 0, ...clonedBlocks);
+      newBlocks.splice(index, 0, ...blocks);
     } else {
-      newBlocks.push(...clonedBlocks);
+      newBlocks.push(...blocks);
     }
 
     this.saveHistory(newBlocks);
-    if (clonedBlocks.length > 0) {
-      this.selectBlock(clonedBlocks[0].id);
+    if (blocks.length > 0) {
+      this.selectBlock(blocks[0].id);
     }
     
     if (this.activePageId()) {
-      clonedBlocks.forEach(b => {
+      blocks.forEach(b => {
         this.socketService.emitBlockAdded(this.activePageId()!, b);
       });
     }
     
-    this.autoSave.triggerSave('template-blocks-added');
-    return clonedBlocks.map(b => b.id);
+    this.queueAutoSave(reason);
+    return blocks.map(b => b.id);
   }
 
   loadBlocks(blocks: CanvasBlock[]): void {
@@ -524,7 +574,7 @@ export class BuilderStore {
 
   updateGlobalStyles(styles: Partial<GlobalStyles>): void {
     this.globalStyles.update(current => ({ ...current, ...styles }));
-    this.autoSave.triggerSave('global-styles-updated');
+    this.queueAutoSave('global-styles-updated');
   }
 
   loadPageSettings(settings: { title: string, slug?: string, metaTitle?: string, metaDescription?: string, ogImage?: string, canonicalUrl?: string, customDomain?: string, published?: boolean, globalStyles?: GlobalStyles }): void {
@@ -551,12 +601,12 @@ export class BuilderStore {
       case 'canonicalUrl': this.canonicalUrl.set(value); break;
       case 'customDomain': this.customDomain.set(value); break;
     }
-    this.autoSave.triggerSave('metadata-updated');
+    this.queueAutoSave('metadata-updated');
   }
 
   updatePublished(published: boolean): void {
     this.published.set(published);
-    this.autoSave.triggerSave('published-status');
+    this.queueAutoSave('published-status');
   }
 
   handleRemoteBlockChange(updatedBlock: CanvasBlock): void {
@@ -570,7 +620,7 @@ export class BuilderStore {
     // Save to history but don't emit
     this.history.update(h => {
       const newH = [...h];
-      newH[this.historyIndex()] = this.cloneBlocks(newBlocks);
+      newH[this.historyIndex()] = newBlocks;
       return newH;
     });
     this.blocks.set(newBlocks);
@@ -583,7 +633,7 @@ export class BuilderStore {
     
     this.history.update(h => {
       const newH = [...h];
-      newH[this.historyIndex()] = this.cloneBlocks(newBlocks);
+      newH[this.historyIndex()] = newBlocks;
       return newH;
     });
     this.blocks.set(newBlocks);
@@ -595,7 +645,7 @@ export class BuilderStore {
     
     this.history.update(h => {
       const newH = [...h];
-      newH[this.historyIndex()] = this.cloneBlocks(newBlocks);
+      newH[this.historyIndex()] = newBlocks;
       return newH;
     });
     this.blocks.set(newBlocks);
@@ -609,27 +659,27 @@ export class BuilderStore {
   // Auto-Save Additional Methods
   setPageTitle(title: string): void {
     this.pageTitle.set(title);
-    this.autoSave.triggerSave('title-changed');
+    this.queueAutoSave('title-changed');
   }
 
   updateSEO(seo: Partial<SEOSettings>): void {
     this.seoSettings.update(s => ({ ...s, ...seo }));
-    this.autoSave.triggerSave('seo-updated');
+    this.queueAutoSave('seo-updated');
   }
 
   setFavicon(url: string): void {
     this.favicon.set(url);
-    this.autoSave.triggerSave('favicon-changed');
+    this.queueAutoSave('favicon-changed');
   }
 
   setCustomCss(css: string): void {
     this.customCss.set(css);
-    this.autoSave.triggerSave('custom-css-changed');
+    this.queueAutoSave('custom-css-changed');
   }
 
   setCustomJs(js: string): void {
     this.customJs.set(js);
-    this.autoSave.triggerSave('custom-js-changed');
+    this.queueAutoSave('custom-js-changed');
   }
 
   setPageTitleSilent(title: string): void {

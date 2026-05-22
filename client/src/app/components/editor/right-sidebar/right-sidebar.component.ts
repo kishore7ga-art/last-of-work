@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal, computed } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, computed, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -144,11 +144,11 @@ import { BlockAnimation } from '../../../models/animation.models';
               <div class="grid-2">
                 <label>
                   <span>Size</span>
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['fontSize']" (ngModelChange)="update('fontSize', $event)" placeholder="16px" />
+                  <input class="input-field" [ngModel]="activeProps()['fontSize']" (ngModelChange)="update('fontSize', $event)" placeholder="16px" />
                 </label>
                 <label>
                   <span>Weight</span>
-                  <select class="input-field" [ngModel]="store.getActiveProps(block)['fontWeight'] || 'normal'" (ngModelChange)="update('fontWeight', $event)">
+                  <select class="input-field" [ngModel]="activeProps()['fontWeight'] || 'normal'" (ngModelChange)="update('fontWeight', $event)">
                     <option value="normal">400</option>
                     <option value="500">500</option>
                     <option value="600">600</option>
@@ -160,20 +160,20 @@ import { BlockAnimation } from '../../../models/animation.models';
               <div class="grid-2">
                 <label>
                   <span>Line Height</span>
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['lineHeight']" (ngModelChange)="update('lineHeight', $event)" placeholder="1.2" />
+                  <input class="input-field" [ngModel]="activeProps()['lineHeight']" (ngModelChange)="update('lineHeight', $event)" placeholder="1.2" />
                 </label>
                 <label>
                   <span>Letter Spacing</span>
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['letterSpacing']" (ngModelChange)="update('letterSpacing', $event)" placeholder="0.05em" />
+                  <input class="input-field" [ngModel]="activeProps()['letterSpacing']" (ngModelChange)="update('letterSpacing', $event)" placeholder="0.05em" />
                 </label>
               </div>
 
               <label>
                 <span>Align</span>
                 <div class="align-group">
-                  <button [class.active]="store.getActiveProps(block)['textAlign'] === 'left'" (click)="update('textAlign', 'left')"><lucide-icon name="align-left" [size]="15"></lucide-icon></button>
-                  <button [class.active]="store.getActiveProps(block)['textAlign'] === 'center'" (click)="update('textAlign', 'center')"><lucide-icon name="align-center" [size]="15"></lucide-icon></button>
-                  <button [class.active]="store.getActiveProps(block)['textAlign'] === 'right'" (click)="update('textAlign', 'right')"><lucide-icon name="align-right" [size]="15"></lucide-icon></button>
+                  <button [class.active]="activeProps()['textAlign'] === 'left'" (click)="update('textAlign', 'left')"><lucide-icon name="align-left" [size]="15"></lucide-icon></button>
+                  <button [class.active]="activeProps()['textAlign'] === 'center'" (click)="update('textAlign', 'center')"><lucide-icon name="align-center" [size]="15"></lucide-icon></button>
+                  <button [class.active]="activeProps()['textAlign'] === 'right'" (click)="update('textAlign', 'right')"><lucide-icon name="align-right" [size]="15"></lucide-icon></button>
                 </div>
               </label>
             </section>
@@ -183,17 +183,17 @@ import { BlockAnimation } from '../../../models/animation.models';
                 Theme Sync
                 <span class="badge orange" *ngIf="store.editMode() === 'mobile'">(Mobile)</span>
               </span>
-              <button class="toggle-row" (click)="update('useThemeColors', store.getActiveProps(block)['useThemeColors'] === false)">
+              <button class="toggle-row" (click)="update('useThemeColors', activeProps()['useThemeColors'] === false)">
                 <span>Use Theme Colors</span>
-                <b [class.on]="store.getActiveProps(block)['useThemeColors'] !== false"></b>
+                <b [class.on]="activeProps()['useThemeColors'] !== false"></b>
               </button>
-              <button class="toggle-row" (click)="update('useThemeFonts', store.getActiveProps(block)['useThemeFonts'] === false)">
+              <button class="toggle-row" (click)="update('useThemeFonts', activeProps()['useThemeFonts'] === false)">
                 <span>Use Theme Fonts</span>
-                <b [class.on]="store.getActiveProps(block)['useThemeFonts'] !== false"></b>
+                <b [class.on]="activeProps()['useThemeFonts'] !== false"></b>
               </button>
-              <button class="toggle-row" (click)="update('useThemeRadius', store.getActiveProps(block)['useThemeRadius'] === false)">
+              <button class="toggle-row" (click)="update('useThemeRadius', activeProps()['useThemeRadius'] === false)">
                 <span>Use Theme Radius</span>
-                <b [class.on]="store.getActiveProps(block)['useThemeRadius'] !== false"></b>
+                <b [class.on]="activeProps()['useThemeRadius'] !== false"></b>
               </button>
             </section>
 
@@ -205,15 +205,15 @@ import { BlockAnimation } from '../../../models/animation.models';
               <label>
                 <span>Text</span>
                 <div class="color-row">
-                  <input type="color" [ngModel]="store.getActiveProps(block)['color'] || '#111827'" (ngModelChange)="update('color', $event)" />
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['color']" (ngModelChange)="update('color', $event)" placeholder="#111827" />
+                  <input type="color" [ngModel]="activeProps()['color'] || '#111827'" (ngModelChange)="update('color', $event)" />
+                  <input class="input-field" [ngModel]="activeProps()['color']" (ngModelChange)="update('color', $event)" placeholder="#111827" />
                 </div>
               </label>
               <label>
                 <span>Background</span>
                 <div class="color-row">
-                  <input type="color" [ngModel]="store.getActiveProps(block)['backgroundColor'] || '#ffffff'" (ngModelChange)="update('backgroundColor', $event)" />
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['backgroundColor']" (ngModelChange)="update('backgroundColor', $event)" placeholder="#ffffff" />
+                  <input type="color" [ngModel]="activeProps()['backgroundColor'] || '#ffffff'" (ngModelChange)="update('backgroundColor', $event)" />
+                  <input class="input-field" [ngModel]="activeProps()['backgroundColor']" (ngModelChange)="update('backgroundColor', $event)" placeholder="#ffffff" />
                 </div>
               </label>
 
@@ -222,15 +222,15 @@ import { BlockAnimation } from '../../../models/animation.models';
                 <label>
                   <span>Gradient From</span>
                   <div class="color-row">
-                    <input type="color" [ngModel]="store.getActiveProps(block)['gradientFrom'] || '#4f6ef7'" (ngModelChange)="update('gradientFrom', $event)" />
-                    <input class="input-field" [ngModel]="store.getActiveProps(block)['gradientFrom']" (ngModelChange)="update('gradientFrom', $event)" placeholder="#4f6ef7" />
+                    <input type="color" [ngModel]="activeProps()['gradientFrom'] || '#4f6ef7'" (ngModelChange)="update('gradientFrom', $event)" />
+                    <input class="input-field" [ngModel]="activeProps()['gradientFrom']" (ngModelChange)="update('gradientFrom', $event)" placeholder="#4f6ef7" />
                   </div>
                 </label>
                 <label>
                   <span>Gradient To</span>
                   <div class="color-row">
-                    <input type="color" [ngModel]="store.getActiveProps(block)['gradientTo'] || '#7c3aed'" (ngModelChange)="update('gradientTo', $event)" />
-                    <input class="input-field" [ngModel]="store.getActiveProps(block)['gradientTo']" (ngModelChange)="update('gradientTo', $event)" placeholder="#7c3aed" />
+                    <input type="color" [ngModel]="activeProps()['gradientTo'] || '#7c3aed'" (ngModelChange)="update('gradientTo', $event)" />
+                    <input class="input-field" [ngModel]="activeProps()['gradientTo']" (ngModelChange)="update('gradientTo', $event)" placeholder="#7c3aed" />
                   </div>
                 </label>
               </ng-container>
@@ -240,8 +240,8 @@ import { BlockAnimation } from '../../../models/animation.models';
                 <label>
                   <span>Border Color</span>
                   <div class="color-row">
-                    <input type="color" [ngModel]="store.getActiveProps(block)['borderColor'] || '#cbd5e1'" (ngModelChange)="update('borderColor', $event)" />
-                    <input class="input-field" [ngModel]="store.getActiveProps(block)['borderColor']" (ngModelChange)="update('borderColor', $event)" placeholder="#cbd5e1" />
+                    <input type="color" [ngModel]="activeProps()['borderColor'] || '#cbd5e1'" (ngModelChange)="update('borderColor', $event)" />
+                    <input class="input-field" [ngModel]="activeProps()['borderColor']" (ngModelChange)="update('borderColor', $event)" placeholder="#cbd5e1" />
                   </div>
                 </label>
               </ng-container>
@@ -301,24 +301,24 @@ import { BlockAnimation } from '../../../models/animation.models';
                 <span class="badge orange" *ngIf="store.editMode() === 'mobile'">(Mobile)</span>
               </span>
               <div class="grid-2">
-                <label><span>Width</span><input class="input-field" [ngModel]="store.getActiveProps(block)['width']" (ngModelChange)="update('width', $event)" /></label>
-                <label><span>Height</span><input class="input-field" [ngModel]="store.getActiveProps(block)['height']" (ngModelChange)="update('height', $event)" /></label>
+                <label><span>Width</span><input class="input-field" [ngModel]="activeProps()['width']" (ngModelChange)="update('width', $event)" /></label>
+                <label><span>Height</span><input class="input-field" [ngModel]="activeProps()['height']" (ngModelChange)="update('height', $event)" /></label>
               </div>
               <div class="grid-2">
-                <label><span>Radius</span><input class="input-field" [ngModel]="store.getActiveProps(block)['borderRadius']" (ngModelChange)="update('borderRadius', $event)" /></label>
-                <label *ngIf="block.type === 'section'"><span>Min Height</span><input class="input-field" [ngModel]="store.getActiveProps(block)['minHeight']" (ngModelChange)="update('minHeight', $event)" placeholder="100px" /></label>
+                <label><span>Radius</span><input class="input-field" [ngModel]="activeProps()['borderRadius']" (ngModelChange)="update('borderRadius', $event)" /></label>
+                <label *ngIf="block.type === 'section'"><span>Min Height</span><input class="input-field" [ngModel]="activeProps()['minHeight']" (ngModelChange)="update('minHeight', $event)" placeholder="100px" /></label>
               </div>
 
               <!-- Section Custom Layout (display, flexDirection, flexAlign, flexJustify, gridColumns, gap, shadow, border) -->
               <ng-container *ngIf="block.type === 'section'">
                 <label>
                   <span>Border Style</span>
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['border']" (ngModelChange)="update('border', $event)" placeholder="1px solid #e5e7eb" />
+                  <input class="input-field" [ngModel]="activeProps()['border']" (ngModelChange)="update('border', $event)" placeholder="1px solid #e5e7eb" />
                 </label>
                 
                 <label>
                   <span>Display Layout</span>
-                  <select class="input-field" [ngModel]="store.getActiveProps(block)['display'] || 'block'" (ngModelChange)="update('display', $event)">
+                  <select class="input-field" [ngModel]="activeProps()['display'] || 'block'" (ngModelChange)="update('display', $event)">
                     <option value="block">Block</option>
                     <option value="flex">Flexbox</option>
                     <option value="grid">CSS Grid</option>
@@ -326,23 +326,23 @@ import { BlockAnimation } from '../../../models/animation.models';
                 </label>
 
                 <!-- Flex options -->
-                <div *ngIf="store.getActiveProps(block)['display'] === 'flex'" class="grid-2">
+                <div *ngIf="activeProps()['display'] === 'flex'" class="grid-2">
                   <label>
                     <span>Direction</span>
-                    <select class="input-field" [ngModel]="store.getActiveProps(block)['flexDirection'] || 'row'" (ngModelChange)="update('flexDirection', $event)">
+                    <select class="input-field" [ngModel]="activeProps()['flexDirection'] || 'row'" (ngModelChange)="update('flexDirection', $event)">
                       <option value="row">Row (Horizontal)</option>
                       <option value="column">Column (Vertical)</option>
                     </select>
                   </label>
                   <label>
                     <span>Gap</span>
-                    <input class="input-field" [ngModel]="store.getActiveProps(block)['gap']" (ngModelChange)="update('gap', $event)" placeholder="16px" />
+                    <input class="input-field" [ngModel]="activeProps()['gap']" (ngModelChange)="update('gap', $event)" placeholder="16px" />
                   </label>
                 </div>
-                <div *ngIf="store.getActiveProps(block)['display'] === 'flex'" class="grid-2">
+                <div *ngIf="activeProps()['display'] === 'flex'" class="grid-2">
                   <label>
                     <span>Align Items</span>
-                    <select class="input-field" [ngModel]="store.getActiveProps(block)['alignItems'] || 'stretch'" (ngModelChange)="update('alignItems', $event)">
+                    <select class="input-field" [ngModel]="activeProps()['alignItems'] || 'stretch'" (ngModelChange)="update('alignItems', $event)">
                       <option value="stretch">Stretch</option>
                       <option value="center">Center</option>
                       <option value="flex-start">Start</option>
@@ -351,7 +351,7 @@ import { BlockAnimation } from '../../../models/animation.models';
                   </label>
                   <label>
                     <span>Justify Content</span>
-                    <select class="input-field" [ngModel]="store.getActiveProps(block)['justifyContent'] || 'flex-start'" (ngModelChange)="update('justifyContent', $event)">
+                    <select class="input-field" [ngModel]="activeProps()['justifyContent'] || 'flex-start'" (ngModelChange)="update('justifyContent', $event)">
                       <option value="flex-start">Start</option>
                       <option value="center">Center</option>
                       <option value="flex-end">End</option>
@@ -362,20 +362,20 @@ import { BlockAnimation } from '../../../models/animation.models';
                 </div>
 
                 <!-- Grid options -->
-                <div *ngIf="store.getActiveProps(block)['display'] === 'grid'" class="grid-2">
+                <div *ngIf="activeProps()['display'] === 'grid'" class="grid-2">
                   <label>
                     <span>Grid Columns</span>
-                    <input class="input-field" [ngModel]="store.getActiveProps(block)['gridColumns'] || '1fr 1fr'" (ngModelChange)="update('gridColumns', $event)" placeholder="1fr 1fr" />
+                    <input class="input-field" [ngModel]="activeProps()['gridColumns'] || '1fr 1fr'" (ngModelChange)="update('gridColumns', $event)" placeholder="1fr 1fr" />
                   </label>
                   <label>
                     <span>Gap</span>
-                    <input class="input-field" [ngModel]="store.getActiveProps(block)['gap']" (ngModelChange)="update('gap', $event)" placeholder="16px" />
+                    <input class="input-field" [ngModel]="activeProps()['gap']" (ngModelChange)="update('gap', $event)" placeholder="16px" />
                   </label>
                 </div>
 
                 <label>
                   <span>Box Shadow</span>
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['shadow']" (ngModelChange)="update('shadow', $event)" placeholder="0 4px 6px rgba(0,0,0,0.1)" />
+                  <input class="input-field" [ngModel]="activeProps()['shadow']" (ngModelChange)="update('shadow', $event)" placeholder="0 4px 6px rgba(0,0,0,0.1)" />
                 </label>
               </ng-container>
 
@@ -383,11 +383,11 @@ import { BlockAnimation } from '../../../models/animation.models';
               <ng-container *ngIf="block.type === 'columns'">
                 <label>
                   <span>Column Gap</span>
-                  <input class="input-field" [ngModel]="store.getActiveProps(block)['gap']" (ngModelChange)="update('gap', $event)" placeholder="20px" />
+                  <input class="input-field" [ngModel]="activeProps()['gap']" (ngModelChange)="update('gap', $event)" placeholder="20px" />
                 </label>
-                <button class="toggle-row" (click)="update('stackMobile', !store.getActiveProps(block)['stackMobile'])">
+                <button class="toggle-row" (click)="update('stackMobile', !activeProps()['stackMobile'])">
                   <span>Stack on Mobile</span>
-                  <b [class.on]="store.getActiveProps(block)['stackMobile']"></b>
+                  <b [class.on]="activeProps()['stackMobile']"></b>
                 </button>
               </ng-container>
             </section>
@@ -398,21 +398,21 @@ import { BlockAnimation } from '../../../models/animation.models';
                 <span class="badge orange" *ngIf="store.editMode() === 'mobile'">(Mobile)</span>
               </span>
               <div class="box-model">
-                <input [ngModel]="splitBox(store.getActiveProps(block)['margin'], 0)" (ngModelChange)="updateBox('margin', 0, $event)" placeholder="M top" />
+                <input [ngModel]="splitBox(activeProps()['margin'], 0)" (ngModelChange)="updateBox('margin', 0, $event)" placeholder="M top" />
                 <div class="box-middle">
-                  <input [ngModel]="splitBox(store.getActiveProps(block)['margin'], 3)" (ngModelChange)="updateBox('margin', 3, $event)" placeholder="M left" />
+                  <input [ngModel]="splitBox(activeProps()['margin'], 3)" (ngModelChange)="updateBox('margin', 3, $event)" placeholder="M left" />
                   <div class="padding-box">
-                    <input [ngModel]="splitBox(store.getActiveProps(block)['padding'], 0)" (ngModelChange)="updateBox('padding', 0, $event)" placeholder="P top" />
+                    <input [ngModel]="splitBox(activeProps()['padding'], 0)" (ngModelChange)="updateBox('padding', 0, $event)" placeholder="P top" />
                     <div class="box-middle">
-                      <input [ngModel]="splitBox(store.getActiveProps(block)['padding'], 3)" (ngModelChange)="updateBox('padding', 3, $event)" placeholder="P left" />
+                      <input [ngModel]="splitBox(activeProps()['padding'], 3)" (ngModelChange)="updateBox('padding', 3, $event)" placeholder="P left" />
                       <div class="center-box">Block</div>
-                      <input [ngModel]="splitBox(store.getActiveProps(block)['padding'], 1)" (ngModelChange)="updateBox('padding', 1, $event)" placeholder="P right" />
+                      <input [ngModel]="splitBox(activeProps()['padding'], 1)" (ngModelChange)="updateBox('padding', 1, $event)" placeholder="P right" />
                     </div>
-                    <input [ngModel]="splitBox(store.getActiveProps(block)['padding'], 2)" (ngModelChange)="updateBox('padding', 2, $event)" placeholder="P bottom" />
+                    <input [ngModel]="splitBox(activeProps()['padding'], 2)" (ngModelChange)="updateBox('padding', 2, $event)" placeholder="P bottom" />
                   </div>
-                  <input [ngModel]="splitBox(store.getActiveProps(block)['margin'], 1)" (ngModelChange)="updateBox('margin', 1, $event)" placeholder="M right" />
+                  <input [ngModel]="splitBox(activeProps()['margin'], 1)" (ngModelChange)="updateBox('margin', 1, $event)" placeholder="M right" />
                 </div>
-                <input [ngModel]="splitBox(store.getActiveProps(block)['margin'], 2)" (ngModelChange)="updateBox('margin', 2, $event)" placeholder="M bottom" />
+                <input [ngModel]="splitBox(activeProps()['margin'], 2)" (ngModelChange)="updateBox('margin', 2, $event)" placeholder="M bottom" />
               </div>
             </section>
           </ng-container>
@@ -617,10 +617,10 @@ import { BlockAnimation } from '../../../models/animation.models';
                 <span class="badge orange" *ngIf="store.editMode() === 'mobile'">(Mobile)</span>
               </span>
               <label>
-                <span>Opacity {{ ((store.getActiveProps(block)['opacity'] ?? 1) * 100) | number:'1.0-0' }}%</span>
-                <input type="range" min="0" max="1" step="0.05" [ngModel]="store.getActiveProps(block)['opacity'] ?? 1" (ngModelChange)="update('opacity', +$event)" />
+                <span>Opacity {{ ((activeProps()['opacity'] ?? 1) * 100) | number:'1.0-0' }}%</span>
+                <input type="range" min="0" max="1" step="0.05" [ngModel]="activeProps()['opacity'] ?? 1" (ngModelChange)="update('opacity', +$event)" />
               </label>
-              <label><span>CSS Class</span><input class="input-field" [ngModel]="store.getActiveProps(block)['class']" (ngModelChange)="update('class', $event)" placeholder="custom-class" /></label>
+              <label><span>CSS Class</span><input class="input-field" [ngModel]="activeProps()['class']" (ngModelChange)="update('class', $event)" placeholder="custom-class" /></label>
               <button class="toggle-row" (click)="toggleHidden(block)">
                 <span>Hide Block</span>
                 <b [class.on]="block.hidden"></b>
@@ -817,8 +817,9 @@ import { BlockAnimation } from '../../../models/animation.models';
     }
   `]
 })
-export class RightSidebarComponent {
+export class RightSidebarComponent implements OnDestroy {
   store = inject(BuilderStore);
+  private cdr = inject(ChangeDetectorRef);
   private pageApi = inject(PageApiService);
   videoService = inject(VideoService);
 
@@ -826,6 +827,19 @@ export class RightSidebarComponent {
   aiPrompt = '';
   aiLoading = signal(false);
   selectedBlock = this.store.selectedBlock;
+  blockType = computed(() => this.selectedBlock()?.type);
+  activeProps = computed(() => {
+    const block = this.selectedBlock();
+    return block ? this.store.getActiveProps(block) : {};
+  });
+  private updateQueue = new Map<string, any>();
+  private sharedUpdateQueue = new Map<string, any>();
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+  ngOnDestroy(): void {
+    this.clearFlushTimer();
+    this.flushUpdates();
+  }
 
   onAnimChange(anim: BlockAnimation) {
     const block = this.selectedBlock();
@@ -862,7 +876,7 @@ export class RightSidebarComponent {
       updatedBg.youtubeId = ytId || '';
     }
     
-    this.store.updateBlock(block.id, { videoBackground: updatedBg });
+    this.updatePropNow('videoBackground', updatedBg);
   }
 
   toggleVideoBackground(enabled: boolean) {
@@ -876,7 +890,7 @@ export class RightSidebarComponent {
       updatedBg.type = 'youtube';
     }
     
-    this.store.updateBlock(block.id, { videoBackground: updatedBg });
+    this.updatePropNow('videoBackground', updatedBg);
   }
 
   customizeForMobile(blockId: string) {
@@ -888,22 +902,72 @@ export class RightSidebarComponent {
   }
 
   update(key: string, value: any) {
-    const id = this.store.selectedBlockId();
-    if (id) this.store.updateBlock(id, { [key]: value });
+    this.updateProp(key, value);
   }
 
   updateSharedContent(key: string, value: any) {
-    const id = this.store.selectedBlockId();
-    if (id) {
-      this.store.updateBlockSharedProps(id, { [key]: value });
+    this.sharedUpdateQueue.set(key, value);
+    this.scheduleFlush();
+  }
+
+  updateProp(key: string, value: any): void {
+    this.updateQueue.set(key, value);
+    this.scheduleFlush();
+  }
+
+  updatePropNow(key: string, value: any): void {
+    const id = this.selectedBlock()?.id;
+    if (!id) return;
+    this.clearFlushTimer();
+    this.flushUpdates();
+    this.store.updateBlock(id, { [key]: value });
+    this.cdr.markForCheck();
+  }
+
+  private scheduleFlush(): void {
+    this.clearFlushTimer();
+    this.flushTimer = setTimeout(() => {
+      this.flushUpdates();
+    }, 16);
+  }
+
+  private clearFlushTimer(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
     }
+  }
+
+  private flushUpdates(): void {
+    this.flushTimer = null;
+    const id = this.selectedBlock()?.id;
+    if (!id) {
+      this.updateQueue.clear();
+      this.sharedUpdateQueue.clear();
+      return;
+    }
+
+    if (this.updateQueue.size === 0 && this.sharedUpdateQueue.size === 0) return;
+
+    const updates = Object.fromEntries(this.updateQueue);
+    const sharedUpdates = Object.fromEntries(this.sharedUpdateQueue);
+    this.updateQueue.clear();
+    this.sharedUpdateQueue.clear();
+
+    if (Object.keys(sharedUpdates).length > 0) {
+      this.store.updateBlockSharedProps(id, sharedUpdates);
+    }
+    if (Object.keys(updates).length > 0) {
+      this.store.updateBlock(id, updates);
+    }
+    this.cdr.markForCheck();
   }
 
   updateBox(key: 'padding' | 'margin', index: number, value: string) {
     const block = this.selectedBlock();
     if (!block) return;
     
-    const activeProps = this.store.getActiveProps(block);
+    const activeProps = this.activeProps();
     const parts = this.expandBox(activeProps[key]);
     parts[index] = value || '0px';
     this.update(key, parts.join(' '));

@@ -8,6 +8,14 @@ import { provideClientHydration } from '@angular/platform-browser';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { LucideAngularModule } from 'lucide-angular';
 import { appIcons } from './app-icons';
+import { CDK_DRAG_CONFIG } from '@angular/cdk/drag-drop';
+
+const dragConfig = {
+  dragStartThreshold: 0,
+  pointerDirectionChangeThreshold: 5,
+  zoomLevel: 1,
+  zIndex: 10000
+};
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,6 +24,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     importProvidersFrom(LucideAngularModule.pick(appIcons)),
     provideAnimations(),
+    { provide: CDK_DRAG_CONFIG, useValue: dragConfig },
     { provide: ErrorHandler, useClass: GlobalErrorHandler }
   ]
 };

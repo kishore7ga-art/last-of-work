@@ -1,4 +1,4 @@
-import { Component, computed, inject, ChangeDetectionStrategy, signal, Output, EventEmitter } from '@angular/core';
+import { Component, computed, inject, ChangeDetectionStrategy, signal, Output, EventEmitter, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -52,7 +52,7 @@ interface BlockDefinition {
         <ng-container *ngIf="activeTab() === 'blocks'">
           <div class="search-wrap">
             <lucide-icon name="search" [size]="14"></lucide-icon>
-            <input [(ngModel)]="searchQuery" (ngModelChange)="searchQuery.set($event)" placeholder="Search blocks..." />
+            <input [value]="searchQuery()" (input)="onSearchInput($event)" placeholder="Search blocks..." />
           </div>
 
           <div class="block-scroll" cdkDropList id="sidebar-block-list" [cdkDropListConnectedTo]="['canvas-drop-list', 'canvas-drop-list-mobile']" [cdkDropListSortingDisabled]="true">
@@ -145,6 +145,8 @@ interface BlockDefinition {
 export class LeftSidebarComponent {
   private library = inject(ComponentLibraryService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
   store = inject(BuilderStore);
 
   activeTab = signal<'blocks' | 'templates' | 'files' | 'pages'>('blocks');
@@ -172,15 +174,34 @@ export class LeftSidebarComponent {
   filteredBlocks = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();
     if (!query) return this.allBlocks;
-    return this.allBlocks.filter(block => block.label.toLowerCase().includes(query));
+    return this.allBlocks.filter(block =>
+      block.label.toLowerCase().includes(query) ||
+      block.type.toLowerCase().includes(query)
+    );
+  });
+
+  private blocksByCategoryMap = computed(() => {
+    const map = new Map<BlockDefinition['category'], BlockDefinition[]>();
+    this.categories.forEach(category => map.set(category, []));
+    this.filteredBlocks().forEach(block => {
+      map.get(block.category)?.push(block);
+    });
+    return map;
   });
 
   blocksByCategory(category: BlockDefinition['category']) {
-    return this.filteredBlocks().filter(block => block.category === category);
+    return this.blocksByCategoryMap().get(category) || [];
   }
 
   addBlock(type: BlockType) {
-    this.store.addBlock(type);
+    this.ngZone.run(() => {
+      this.store.addBlock(type);
+      this.cdr.markForCheck();
+    });
+  }
+
+  onSearchInput(event: Event): void {
+    this.searchQuery.set((event.target as HTMLInputElement).value);
   }
 
   openPage(id: string) {

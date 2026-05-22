@@ -1,4 +1,4 @@
-import { Component, inject, Output, EventEmitter, signal } from '@angular/core';
+import { Component, inject, Output, EventEmitter, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BuilderStore } from '../../../store/builder.store';
@@ -11,6 +11,7 @@ import { LucideAngularModule } from 'lucide-angular';
   selector: 'app-settings-modal',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideAngularModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="modal-backdrop">
       <div class="settings-modal">

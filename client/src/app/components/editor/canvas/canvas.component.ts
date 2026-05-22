@@ -7,10 +7,7 @@ import {
   CdkDragHandle,
   CdkDragPreview,
   CdkDragPlaceholder,
-  moveItemInArray,
-  DragDropModule,
-  CdkDragStart,
-  CdkDragEnd
+  DragDropModule
 } from '@angular/cdk/drag-drop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { LucideAngularModule } from 'lucide-angular';
@@ -60,7 +57,7 @@ import { TEMPLATE_GROUPS } from '../../../data/templates.data';
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss']
 })
-export class CanvasComponent implements OnInit {
+export class CanvasComponent implements OnInit, OnDestroy {
   store = inject(BuilderStore);
   private toastService = inject(ToastService);
   private ngZone = inject(NgZone);
@@ -68,23 +65,35 @@ export class CanvasComponent implements OnInit {
 
   previewAnimations = signal(false);
   isDragging = signal(false);
+  private dragListenerCleanups: Array<() => void> = [];
 
   ngOnInit(): void {
-    // Run drag-related listeners outside of Angular's zone to prevent change detection on mousemove
     this.ngZone.runOutsideAngular(() => {
-      // Optional: manual document-level event listeners can be configured here if needed.
+      const started = () => {
+        this.ngZone.run(() => {
+          this.isDragging.set(true);
+          this.cdr.markForCheck();
+        });
+      };
+      const ended = () => {
+        this.ngZone.run(() => {
+          this.isDragging.set(false);
+          this.cdr.markForCheck();
+        });
+      };
+
+      document.addEventListener('cdkDragStarted', started, { passive: true });
+      document.addEventListener('cdkDragEnded', ended, { passive: true });
+      this.dragListenerCleanups.push(
+        () => document.removeEventListener('cdkDragStarted', started),
+        () => document.removeEventListener('cdkDragEnded', ended)
+      );
     });
   }
 
-  onDragStarted(event: CdkDragStart): void {
-    this.isDragging.set(true);
-  }
-
-  onDragEnded(event: CdkDragEnd): void {
-    this.ngZone.run(() => {
-      this.isDragging.set(false);
-      this.cdr.markForCheck();
-    });
+  ngOnDestroy(): void {
+    this.dragListenerCleanups.forEach(cleanup => cleanup());
+    this.dragListenerCleanups = [];
   }
 
   toggleAnimPreview() {
@@ -155,17 +164,20 @@ export class CanvasComponent implements OnInit {
   }
 
   onBlockDrop(event: CdkDragDrop<CanvasBlock[]>): void {
-    if (event.previousIndex === event.currentIndex) 
-      return;
+    this.ngZone.run(() => {
+      if (event.previousIndex === event.currentIndex) return;
 
-    this.store.reorderBlocks(
-      event.previousIndex,
-      event.currentIndex
-    );
+      this.store.reorderBlocks(
+        event.previousIndex,
+        event.currentIndex
+      );
+      this.cdr.markForCheck();
+    });
   }
 
   // For sidebar drag to canvas:
   onSidebarDrop(event: CdkDragDrop<any>): void {
+    this.ngZone.run(() => {
     if (event.previousContainer === event.container) {
       // Reorder within canvas
       this.store.reorderBlocks(
@@ -183,12 +195,14 @@ export class CanvasComponent implements OnInit {
       } else if (data?.savedComponent) {
         this.store.addSavedComponentAtIndex(data.savedComponent, event.currentIndex);
       } else if (data?.isTemplate && data.template) {
-        const addedBlockIds = this.store.addTemplateBlocks(data.template.blocks, event.currentIndex);
+        this.store.addTemplateBlocks(data.template.blocks, event.currentIndex);
         this.toastService.success(`✓ ${data.template.name} added to canvas`);
       } else if (data) {
         this.store.addBlockAt(data, event.currentIndex);
       }
     }
+      this.cdr.markForCheck();
+    });
   }
 
   trackBlock(index: number, block: CanvasBlock): string {

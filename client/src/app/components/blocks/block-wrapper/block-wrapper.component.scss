@@ -1,3 +1,121 @@
 :host {
   display: block;
+  width: 100%;
+  position: relative;
+}
+
+.wrapper-inner {
+  position: relative;
+  width: 100%;
+  outline: 0 solid transparent;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition: outline-color 100ms ease, box-shadow 100ms ease, opacity 100ms ease;
+}
+
+:host(.hovered) .wrapper-inner {
+  outline: 1px dashed var(--border-active);
+}
+
+:host(.selected) .wrapper-inner {
+  outline: 2px solid var(--accent-blue);
+  box-shadow: 0 0 0 4px rgba(79, 110, 247, 0.15);
+  z-index: 3;
+}
+
+.wrapper-inner.has-video-selected {
+  outline: 2px solid #a855f7 !important;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15) !important;
+}
+
+.block-controls {
+  position: absolute;
+  left: 10px;
+  top: -34px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 20px;
+  background: var(--accent-blue);
+  color: white;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+.wrapper-inner.has-video-selected .block-controls,
+.wrapper-inner.has-video-selected .toolbar-arrow {
+  background: #a855f7 !important;
+}
+
+.toolbar-arrow {
+  position: absolute;
+  left: 18px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  background: var(--accent-blue);
+}
+
+.icon-btn {
+  position: relative;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  transition: background 100ms ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.delete-btn:hover {
+  background: var(--danger);
+}
+
+.drag-handle {
+  cursor: grab;
+}
+
+.block-type-label {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  padding: 0 4px;
+}
+
+.block-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.block-content.hidden-block {
+  opacity: 0.5;
+}
+
+.anim-badge {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  z-index: 5;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: white;
+  font-size: 11px;
+  pointer-events: none;
 }

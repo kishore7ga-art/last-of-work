@@ -27,7 +27,7 @@
   </div>
 
   <!-- Main Templates Scroll Area -->
-  <div class="template-scroll" cdkDropList id="templates-list" [cdkDropListConnectedTo]="['canvas-list']" [cdkDropListSortingDisabled]="true">
+  <div class="template-scroll" cdkDropList id="templates-list" [cdkDropListConnectedTo]="['canvas-drop-list', 'canvas-drop-list-mobile']" [cdkDropListSortingDisabled]="true">
     
     <!-- Recently Used Templates (Before Categories, only if has items) -->
     <ng-container *ngIf="recentTemplates().length > 0 && searchQuery() === '' && selectedCategory() === 'all'">

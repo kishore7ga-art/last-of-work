@@ -30,17 +30,19 @@
         <!-- Phone screen -->
         <div class="phone-screen">
           <div class="phone-content"
-            [cdkDropListData]="store.blocks()"
+            id="canvas-drop-list-mobile"
+            [cdkDropListData]="blocks()"
             cdkDropList
-            (cdkDropListDropped)="onBlockDrop($event)">
+            [cdkDropListConnectedTo]="['sidebar-block-list', 'templates-list']"
+            (cdkDropListDropped)="onSidebarDrop($event)">
             
-            @if (store.blocks().length === 0) {
+            @if (blocks().length === 0) {
               <div class="mobile-empty">
                 <p>Add blocks to see mobile view</p>
               </div>
             }
             
-            @for (block of store.blocks(); track block.id; let i = $index) {
+            @for (block of blocks(); track block.id; let i = $index) {
               @if (block.visibility?.mobile !== false) {
                 <div cdkDrag
                   [cdkDragData]="block"
@@ -118,18 +120,19 @@
         [style.width.px]="canvasWidth()"
         id="canvas-drop-list"
         cdkDropList
-        [cdkDropListData]="store.blocks()"
-        (cdkDropListDropped)="onBlockDrop($event)"
+        [cdkDropListData]="blocks()"
+        [cdkDropListConnectedTo]="['sidebar-block-list', 'templates-list']"
+        (cdkDropListDropped)="onSidebarDrop($event)"
         (click)="$event.stopPropagation()">
         
-        @if (store.blocks().length === 0) {
+        @if (blocks().length === 0) {
           <div class="canvas-empty">
             <lucide-icon name="mouse-pointer-click" [size]="40" class="empty-icon"></lucide-icon>
             <p>Click blocks or drag templates here</p>
           </div>
         }
         
-        @for (block of store.blocks(); track block.id; let i = $index) {
+        @for (block of blocks(); track block.id; let i = $index) {
           <div cdkDrag
             [cdkDragData]="block"
             [id]="'block-' + block.id"
@@ -145,8 +148,6 @@
               [block]="block"
               [id]="'block-' + block.id"
               [mbAnimate]="block.animation">
-              
-              <span cdkDragHandle class="drag-handle">⠿</span>
               
               <div class="block-render" [ngSwitch]="block.type">
                 <app-text-block *ngSwitchCase="'text'" [props]="store.getActiveProps(block)" [blockId]="block.id" [isHeading]="false"></app-text-block>
