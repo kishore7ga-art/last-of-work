@@ -33,7 +33,7 @@ const mapLegacySeo = (body, updates) => {
 exports.getAllPages = async (req, res, next) => {
   try {
     const pages = await Page.find()
-      .select('title slug published updatedAt thumbnail viewCount')
+      .select('title slug published updatedAt thumbnail viewCount description workspaceId')
       .sort({ updatedAt: -1 })
       .limit(100)
       .lean();
