@@ -244,53 +244,65 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.fileTreeService.loadFromStorage();
     this.route.paramMap.subscribe(params => {
-      this.pageId = params.get('id');
+      const newPageId = params.get('id');
+
+      // Clean up previous page's auto-save before loading the new page
+      if (this.pageId && this.pageId !== newPageId) {
+        this.autoSave.destroy();
+        if (this.pageId !== 'new' && this.pageId !== 'temp') {
+          this.socketService.leavePage(this.pageId);
+        }
+      }
+
+      this.pageId = newPageId;
       this.loadPageTabs();
+
       if (this.pageId === 'new') {
-        this.store.loadPageSettings({ title: 'Untitled Page', slug: 'new' });
+        this.autoSave.suppressDuringLoad();
+        this.store.setPageTitleSilent('Untitled Page');
         this.store.activePageId.set('new');
         this.store.loadBlocks([]);
+        this.autoSave.resumeAfterLoad();
       } else if (this.pageId && this.pageId !== 'temp') {
         this.loadPage(this.pageId);
       } else {
-        this.store.loadPageSettings({ title: 'Untitled Page', slug: 'temp' });
+        this.autoSave.suppressDuringLoad();
+        this.store.setPageTitleSilent('Untitled Page');
         this.store.activePageId.set('temp');
         this.store.loadBlocks(this.storageService.loadPage() || []);
+        this.autoSave.resumeAfterLoad();
       }
 
       if (this.pageId && this.pageId !== 'new' && this.pageId !== 'temp') {
         this.socketService.connect();
         this.socketService.joinPage(this.pageId);
-        
-        const currentUser = { _id: '000000000000000000000001', name: 'Default User', email: 'default@user.com' };
-        const currentUserId = currentUser._id;
+
+        const currentUserId = '000000000000000000000001';
 
         this.socketService.onBlockChanged((data) => {
           if (data.updatedBy !== currentUserId) {
             this.store.handleRemoteBlockChange(data.block);
           }
         });
-        
+
         this.socketService.onBlockAdded((data) => {
           if (data.addedBy !== currentUserId) {
             this.store.handleRemoteBlockAdded(data.block);
           }
         });
-        
+
         this.socketService.onBlockDeleted((data) => {
           if (data.deletedBy !== currentUserId) {
             this.store.handleRemoteBlockDeleted(data.blockId);
           }
         });
 
-        this.socketService.onNewComment((data) => {
-          // Placeholder for comment update
+        this.socketService.onNewComment((_data) => {
+          // reserved for future comment sync
         });
       }
     });
   }
-
-
 
   ngOnDestroy() {
     this.autoSave.destroy();
@@ -301,52 +313,49 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   }
 
   loadPage(id: string) {
+    // ── Suppress auto-save during the entire load sequence ──────────────────
+    this.autoSave.suppressDuringLoad();
+
     this.pageApi.getPage(id).subscribe({
       next: (page) => {
+        // Load all metadata SILENTLY (no auto-save queued)
         this.store.setPageTitleSilent(page.title);
-        this.store.updatePageMetadata('pageSlug', page.slug || '');
-        this.store.updatePageMetadata('canonicalUrl', page.canonicalUrl || '');
-        this.store.updatePageMetadata('customDomain', page.customDomain || '');
-        this.store.updatePublished(page.published);
+        this.store.setPageSlugSilent(page.slug || '');
         this.store.setSEOSilent(page.seo);
         this.store.setSettingsSilent(page.settings);
-        
+        this.store.updatePublishedSilent(page.published);
+
         if (page.globalStyles) {
-          // This will trigger an auto-save, but since it's initial load, we will manually clear unsaved changes below
-          this.store.updateGlobalStyles(page.globalStyles);
+          this.store.globalStyles.set(page.globalStyles); // write directly, no queued save
         }
-        
+
         this.store.activePageId.set(page._id);
         this.fileTreeService.selectNodeByPageId(page._id);
-        
+
         if (page.settings) {
           this.themeService.restoreFromPage(page.settings.themeId, page.settings.customTheme);
         }
-        
-        if (page.blocks && page.blocks.length > 0) {
-          this.store.loadBlocks(page.blocks);
-        } else {
-          this.store.loadBlocks([]);
-        }
 
+        // Load blocks into history (no save queued)
+        this.store.loadBlocks(page.blocks?.length ? page.blocks : []);
+
+        // ── Start auto-save AFTER everything is loaded ───────────────────────
         this.autoSave.init(page._id);
-        
-        setTimeout(() => {
-          this.autoSave.hasUnsavedChanges.set(false);
-        }, 100);
+        this.autoSave.resumeAfterLoad();
 
-        // Fetch unresolved comment count
+        // Load comment count (non-blocking)
         this.commentApi.getComments(page._id).subscribe({
           next: (comments) => {
-            const count = comments.filter(c => !c.resolved).length;
-            this.unresolvedCommentCount.set(count);
+            this.unresolvedCommentCount.set(comments.filter(c => !c.resolved).length);
           }
         });
+      },
+      error: () => {
+        this.autoSave.resumeAfterLoad();
+        this.toast.error('Failed to load page');
       }
     });
   }
-
-
 
   loadPageTabs() {
     this.pageApi.getPages().subscribe({
@@ -356,10 +365,12 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         if (this.pageId && this.pageId !== 'new' && this.pageId !== 'temp') {
           this.fileTreeService.selectNodeByPageId(this.pageId);
         }
+        // Don't overwrite currently-loaded blocks for the active page
         this.store.loadPages(pages.map(page => ({
           id: page._id,
           title: page.title,
           slug: page.slug,
+          // Only pass blocks for non-active pages (active page loads separately)
           blocks: page._id === this.pageId ? this.store.blocks() : []
         })), this.pageId);
       }

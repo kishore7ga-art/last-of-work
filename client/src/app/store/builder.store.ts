@@ -609,6 +609,11 @@ export class BuilderStore {
     this.queueAutoSave('published-status');
   }
 
+  /** Set published without queuing auto-save (used during page load) */
+  updatePublishedSilent(published: boolean): void {
+    this.published.set(published);
+  }
+
   handleRemoteBlockChange(updatedBlock: CanvasBlock): void {
     const currentBlocks = this.blocks();
     const blockIndex = currentBlocks.findIndex(b => b.id === updatedBlock.id);
@@ -694,6 +699,10 @@ export class BuilderStore {
 
   setPageTitleSilent(title: string): void {
     this.pageTitle.set(title || 'Untitled Page');
+  }
+
+  setPageSlugSilent(slug: string): void {
+    this.pageSlug.set(slug || '');
   }
 
   setSEOSilent(seo: Partial<SEOSettings> | undefined): void {
