@@ -140,8 +140,8 @@ interface BlockDefinition {
       flex-direction: column;
       width: 260px;
       height: 100%;
-      background: #0c0c14;
-      border-right: 1px solid #161622;
+      background: #030c1c;
+      border-right: 1px solid #0e2040;
       flex-shrink: 0;
       overflow: hidden;
     }
@@ -150,8 +150,8 @@ interface BlockDefinition {
     .tab-bar {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      background: #08080f;
-      border-bottom: 1px solid #18182a;
+      background: #02080f;
+      border-bottom: 1px solid #0e2040;
       padding: 8px 6px 0;
       gap: 2px;
       flex-shrink: 0;
@@ -167,7 +167,7 @@ interface BlockDefinition {
       background: transparent;
       border: none;
       border-radius: 10px 10px 0 0;
-      color: #3d3d5c;
+      color: #2a5090;
       cursor: pointer;
       transition: color 200ms, background 200ms;
       position: relative;
@@ -198,14 +198,14 @@ interface BlockDefinition {
       }
       
       &:hover:not(.active) {
-        color: #6868a0;
+        color: #4f7abf;
         .tab-icon-wrap {
-          background: rgba(255,255,255,0.04);
+          background: rgba(29,106,248,0.06);
         }
       }
       
       &.active {
-        color: #b8c4ff;
+        color: #c8deff;
 
         // Crisp underline glow
         &::after {
@@ -215,23 +215,23 @@ interface BlockDefinition {
           left: 12%;
           width: 76%;
           height: 2px;
-          background: linear-gradient(90deg, #4f6ef7 0%, #9b6cf8 100%);
+          background: linear-gradient(90deg, #1d6af8, #4f90ff);
           border-radius: 2px 2px 0 0;
-          box-shadow: 0 0 10px rgba(79,110,247,0.8), 0 0 20px rgba(79,110,247,0.3);
+          box-shadow: 0 0 10px rgba(29,106,248,0.9), 0 0 20px rgba(29,106,248,0.4);
         }
         
         .tab-icon-wrap {
-          background: rgba(79, 110, 247, 0.12);
-          box-shadow: 0 0 0 1px rgba(79,110,247,0.2) inset;
+          background: rgba(29,106,248,0.15);
+          box-shadow: 0 0 0 1px rgba(29,106,248,0.3) inset;
           
           lucide-icon {
-            color: #7c9ff8;
-            filter: drop-shadow(0 0 5px rgba(124,159,248,0.7));
+            color: #4f90ff;
+            filter: drop-shadow(0 0 5px rgba(79,144,255,0.7));
           }
         }
         
         .tab-label {
-          color: #7c9ff8;
+          color: #4f90ff;
         }
       }
     }

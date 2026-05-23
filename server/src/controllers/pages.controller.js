@@ -90,14 +90,17 @@ exports.updatePage = async (req, res, next) => {
     }
 
     const allowedUpdates = {
-      title: req.body.title,
-      description: req.body.description,
-      blocks: req.body.blocks,
-      thumbnail: req.body.thumbnail,
-      themeId: req.body.themeId,
-      customTheme: req.body.customTheme,
-      seo: req.body.seo,
-      settings: req.body.settings
+      title:        req.body.title,
+      description:  req.body.description,
+      blocks:       req.body.blocks,
+      thumbnail:    req.body.thumbnail,
+      themeId:      req.body.themeId,
+      customTheme:  req.body.customTheme,
+      seo:          req.body.seo,
+      settings:     req.body.settings,
+      globalStyles: req.body.globalStyles,
+      canonicalUrl: req.body.canonicalUrl,
+      customDomain: req.body.customDomain,
     };
 
     // Remove undefined fields

@@ -189,8 +189,8 @@ import { CanvasComponent } from '../canvas/canvas.component';
     
     .toolbar {
       height: 52px;
-      background: #08080f;
-      border-bottom: 1px solid #1a1a24;
+      background: #040c1e;
+      border-bottom: 1px solid #0e2040;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -199,6 +199,7 @@ import { CanvasComponent } from '../canvas/canvas.component';
       gap: 8px;
       position: relative;
       z-index: 100;
+      box-shadow: 0 1px 0 rgba(29,106,248,0.15);
     }
 
     // LEFT
@@ -219,20 +220,20 @@ import { CanvasComponent } from '../canvas/canvas.component';
       .logo-icon {
         width: 28px;
         height: 28px;
-        background: linear-gradient(
-          135deg, #4f6ef7, #7c3aed);
+        background: linear-gradient(135deg, #1d6af8, #0a4cc4);
         border-radius: 7px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
         flex-shrink: 0;
+        box-shadow: 0 0 12px rgba(29,106,248,0.4);
       }
       
       .logo-text {
         font-size: 15px;
         font-weight: 700;
-        color: #f1f1f3;
+        color: #e8f0ff;
         letter-spacing: -0.02em;
         white-space: nowrap;
       }
@@ -297,8 +298,8 @@ import { CanvasComponent } from '../canvas/canvas.component';
 
     .device-toggle {
       display: flex;
-      background: #111118;
-      border: 1px solid #1a1a24;
+      background: #071428;
+      border: 1px solid #0e2040;
       border-radius: 8px;
       padding: 3px;
       gap: 2px;
@@ -313,15 +314,16 @@ import { CanvasComponent } from '../canvas/canvas.component';
       background: transparent;
       border: none;
       border-radius: 5px;
-      color: #4a4a6a;
+      color: #3a6090;
       cursor: pointer;
       transition: all 150ms;
       
-      &:hover { color: #8b8ba0; }
+      &:hover { color: #7ba3d4; }
       
       &.active {
-        background: #4f6ef7;
+        background: linear-gradient(135deg, #1d6af8, #0a4cc4);
         color: white;
+        box-shadow: 0 2px 8px rgba(29,106,248,0.4);
       }
     }
 
@@ -515,38 +517,37 @@ import { CanvasComponent } from '../canvas/canvas.component';
       border: none;
       border-radius: 7px;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       transition: all 150ms;
       white-space: nowrap;
       
       &.preview-btn {
-        background: #111118;
-        border: 1px solid #2a2a3d;
-        color: #c8c8d8;
+        background: #071428;
+        border: 1px solid #1e3a5f;
+        color: #7ba3d4;
         
         &:hover {
-          background: #1a1a24;
-          border-color: #4f6ef7;
-          color: white;
+          background: #0a1e38;
+          border-color: #1d6af8;
+          color: #e8f0ff;
         }
       }
       
       &.publish-btn {
-        background: linear-gradient(
-          135deg, #4f6ef7, #7c3aed);
+        background: linear-gradient(135deg, #1d6af8, #0a4cc4);
         color: white;
+        box-shadow: 0 2px 10px rgba(29,106,248,0.35);
         
         &:hover {
-          opacity: 0.9;
+          opacity: 0.92;
           transform: translateY(-1px);
-          box-shadow: 
-            0 4px 12px rgba(79,110,247,0.4);
+          box-shadow: 0 6px 18px rgba(29,106,248,0.5);
         }
         
         &.published {
-          background: linear-gradient(
-            135deg, #059669, #10b981);
+          background: linear-gradient(135deg, #059669, #10b981);
+          box-shadow: 0 2px 10px rgba(16,185,129,0.35);
         }
       }
     }

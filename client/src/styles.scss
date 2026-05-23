@@ -2,27 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── NAVY BLUE THEME ──────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-tertiary: #1a1a24;
-  --bg-elevated: #22222f;
-  --bg-canvas: #1e1e2e;
-  --border-subtle: #2a2a3d;
-  --border-active: #3d3d5c;
-  --accent-blue: #4f6ef7;
-  --accent-purple: #7c3aed;
-  --accent-teal: #06b6d4;
-  --text-primary: #f1f1f3;
-  --text-secondary: #8b8ba0;
-  --text-muted: #4a4a6a;
+  /* Navy Blue Dark Palette */
+  --bg-primary:    #050b18;
+  --bg-secondary:  #0a1628;
+  --bg-tertiary:   #0f2040;
+  --bg-elevated:   #142850;
+  --bg-canvas:     #0d1f3c;
+  --border-subtle: #1e3a5f;
+  --border-active: #2563a8;
+
+  /* Navy Blue Accents */
+  --accent-blue:   #1d6af8;
+  --accent-navy:   #0a4cc4;
+  --accent-light:  #4f90ff;
+  --accent-purple: #5b4cf8;
+  --accent-teal:   #0ea5e9;
+  --accent-glow:   rgba(29, 106, 248, 0.4);
+
+  /* Text */
+  --text-primary:   #e8f0ff;
+  --text-secondary: #7ba3d4;
+  --text-muted:     #3a6090;
+
+  /* Status */
   --success: #22c55e;
-  --danger: #ef4444;
+  --danger:  #ef4444;
   --warning: #f59e0b;
 }
 
-html,
-body {
+/* ── BASE ─────────────────────────────────────────────────── */
+html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -30,23 +43,24 @@ body {
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── SCROLLBARS ───────────────────────────────────────────── */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-active) transparent;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb {
   background: var(--border-active);
   border-radius: 999px;
 }
+::-webkit-scrollbar-track { background: transparent; }
 
+/* ── FORM INPUTS ──────────────────────────────────────────── */
 .input-field {
   width: 100%;
   height: 32px;
@@ -68,13 +82,12 @@ textarea.input-field {
 
 .input-field:focus {
   border-color: var(--accent-blue);
-  box-shadow: 0 0 0 2px rgba(79, 110, 247, 0.4);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  background: var(--bg-elevated);
 }
 
-.sidebar-section {
-  margin-bottom: 18px;
-  padding: 0 12px;
-}
+/* ── SIDEBAR ──────────────────────────────────────────────── */
+.sidebar-section { margin-bottom: 18px; padding: 0 12px; }
 
 .sidebar-section-title {
   display: block;
@@ -110,6 +123,7 @@ textarea.input-field {
   opacity: 0.45;
 }
 
+/* ── TOASTS ───────────────────────────────────────────────── */
 .toast-stack {
   position: fixed;
   z-index: 10000;
@@ -124,67 +138,45 @@ textarea.input-field {
   min-width: 240px;
   max-width: 360px;
   padding: 12px 14px;
-  background: var(--bg-tertiary);
+  background: var(--bg-elevated);
   color: var(--text-primary);
   border: 1px solid var(--border-subtle);
   border-left-width: 4px;
   border-radius: 10px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(29, 106, 248, 0.1);
   animation: toastSlideIn 250ms ease;
 }
 
 .toast-success { border-left-color: var(--success); }
-.toast-error { border-left-color: var(--danger); }
-.toast-info { border-left-color: var(--accent-blue); }
+.toast-error   { border-left-color: var(--danger); }
+.toast-info    { border-left-color: var(--accent-blue); }
 
 @keyframes toastSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ── ANIMATIONS ───────────────────────────────────────────── */
 .builder-animation-preview {
   animation: builderPreviewPulse 850ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes builderPreviewPulse {
-  0% {
-    opacity: 0;
-    transform: translateY(24px) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  0%   { opacity: 0; transform: translateY(24px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-[cdkDragHandle] {
-  cursor: grab !important;
-  touch-action: none;
-}
-
-[cdkDragHandle]:active {
-  cursor: grabbing !important;
-}
+/* ── CDK DRAG & DROP ──────────────────────────────────────── */
+[cdkDragHandle] { cursor: grab !important; touch-action: none; }
+[cdkDragHandle]:active { cursor: grabbing !important; }
 
 .cdk-drag-dragging * {
   user-select: none !important;
   pointer-events: none !important;
 }
 
-.cdk-drag-dragging {
-  opacity: 0.85 !important;
-}
-
-.cdk-drag-placeholder {
-  opacity: 1 !important;
-  transition: none !important;
-}
+.cdk-drag-dragging { opacity: 0.85 !important; }
+.cdk-drag-placeholder { opacity: 1 !important; transition: none !important; }
 
 .cdk-drag-preview {
   opacity: 1 !important;
@@ -194,10 +186,14 @@ textarea.input-field {
   will-change: transform;
 }
 
-.cdk-drop-list-dragging * {
-  transition: transform 150ms ease !important;
-}
+.cdk-drop-list-dragging * { transition: transform 150ms ease !important; }
+.cdk-drag-animating { transition: transform 150ms cubic-bezier(0.2, 0, 0, 1) !important; }
 
-.cdk-drag-animating {
-  transition: transform 150ms cubic-bezier(0.2, 0, 0, 1) !important;
-}
+/* ── NAVY BLUE UTILITY OVERRIDES ──────────────────────────── */
+/* Make Tailwind blue classes use our navy accent */
+.from-blue-600 { --tw-gradient-from: #1d6af8 !important; }
+.to-violet-600  { --tw-gradient-to: #5b4cf8 !important; }
+.bg-blue-500\/10 { background-color: rgba(29, 106, 248, 0.1) !important; }
+.text-blue-300  { color: #7eb3ff !important; }
+.text-blue-400  { color: #4f90ff !important; }
+.border-blue-400 { border-color: #4f90ff !important; }

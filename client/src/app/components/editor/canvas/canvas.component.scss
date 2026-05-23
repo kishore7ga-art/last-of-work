@@ -6,8 +6,8 @@
 
 .canvas-area {
   flex: 1;
-  background: #1e1e2e;
-  background-image: radial-gradient(circle, #2a2a3d 1px, transparent 1px);
+  background: #050c1a;
+  background-image: radial-gradient(circle, #0e2040 1px, transparent 1px);
   background-size: 20px 20px;
   overflow: auto;
   display: flex;
@@ -31,11 +31,11 @@
   
   .device-label {
     font-size: 12px;
-    color: #8b8ba0;
-    background: #111118;
+    color: #4f7abf;
+    background: #071428;
     padding: 4px 12px;
     border-radius: 20px;
-    border: 1px solid #2a2a3d;
+    border: 1px solid #0e2040;
   }
   
   .edit-mode-badge {
@@ -62,14 +62,15 @@
 
 .phone-frame {
   width: 390px;
-  background: #1a1a2e;
+  background: #071428;
   border-radius: 44px;
-  border: 2px solid #3d3d5c;
+  border: 2px solid #1e3a5f;
   box-shadow:
-    0 0 0 6px #111118,
-    0 0 0 8px #2a2a3d,
-    0 30px 80px rgba(0,0,0,0.6),
-    inset 0 0 0 1px rgba(255,255,255,0.05);
+    0 0 0 6px #040c1e,
+    0 0 0 8px #0e2040,
+    0 30px 80px rgba(0,0,0,0.7),
+    0 0 40px rgba(29,106,248,0.08),
+    inset 0 0 0 1px rgba(29,106,248,0.06);
   overflow: hidden;
   position: relative;
   display: flex;
@@ -78,7 +79,7 @@
 
 .phone-top {
   height: 44px;
-  background: #111118;
+  background: #040c1e;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -87,9 +88,9 @@
   .phone-notch {
     width: 120px;
     height: 32px;
-    background: #0a0a0f;
+    background: #020810;
     border-radius: 0 0 20px 20px;
-    border: 1px solid #2a2a3d;
+    border: 1px solid #0e2040;
     border-top: none;
   }
 }
@@ -112,7 +113,7 @@
 
 .phone-bottom {
   height: 34px;
-  background: #111118;
+  background: #040c1e;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -121,8 +122,9 @@
   .phone-home-bar {
     width: 120px;
     height: 4px;
-    background: #3d3d5c;
+    background: #1d6af8;
     border-radius: 4px;
+    opacity: 0.5;
   }
 }
 
@@ -188,16 +190,16 @@
   min-height: 400px;
   gap: 12px;
   
-  .empty-icon { color: #2a2a3d; }
+  .empty-icon { color: #0e2040; }
   
   p {
-    color: #4a4a6a;
+    color: #2a5090;
     font-size: 14px;
   }
   
   &.cdk-drop-list-receiving {
-    background: rgba(79,110,247,0.03);
-    border: 2px dashed #4f6ef7;
+    background: rgba(29,106,248,0.04);
+    border: 2px dashed #1d6af8;
     border-radius: 12px;
   }
 }
@@ -235,20 +237,20 @@
 }
 
 .drop-placeholder {
-  background: rgba(79, 110, 247, 0.08);
-  border: 2px dashed #4f6ef7;
+  background: rgba(29, 106, 248, 0.07);
+  border: 2px dashed #1d6af8;
   border-radius: 8px;
   min-height: 56px;
   margin: 4px 0;
 }
 
 .drag-preview {
-  background: #4f6ef7;
+  background: #1d6af8;
   color: white;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 12px;
-  box-shadow: 0 8px 24px rgba(79,110,247,0.4);
+  box-shadow: 0 8px 24px rgba(29,106,248,0.4);
 }
 
 .drag-handle {
