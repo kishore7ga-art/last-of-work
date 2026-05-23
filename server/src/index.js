@@ -43,20 +43,6 @@ const angularDist = path.join(
 )
 app.use(express.static(angularDist))
 
-// Health check — test this first
-app.get('/api/health', async (req, res) => {
-  const state = mongoose.connection.readyState
-  res.json({
-    status: 'ok',
-    database: state === 1 
-      ? 'connected' : 'disconnected',
-    connected: state === 1,
-    node: process.version,
-    env: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
-  })
-})
-
 // MongoDB Connection with state checking and auto-retry
 const connectDB = async (retries = 0) => {
   const state = mongoose.connection.readyState
@@ -106,7 +92,7 @@ const connectDB = async (retries = 0) => {
   }
 }
 
-// Database connection middleware for every incoming API request
+// Database connection middleware for every incoming API request (registered early)
 app.use(async (req, res, next) => {
   if (req.path.startsWith('/api/')) {
     try {
@@ -128,24 +114,36 @@ app.use(async (req, res, next) => {
 // Trigger connection immediately during initialization
 connectDB().catch(err => console.error('Initial DB connection error:', err.message))
 
-// Safe route loader — won't crash on errors
-const loadRoute = (urlPath, filePath) => {
+// Health check — placed below connection middleware so state is always connected:true
+app.get('/api/health', async (req, res) => {
+  const state = mongoose.connection.readyState
+  res.json({
+    status: 'ok',
+    database: state === 1 
+      ? 'connected' : 'disconnected',
+    connected: state === 1,
+    node: process.version,
+    env: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  })
+})
+
+// Load all routes (statically required for Vercel Serverless Function bundling)
+const loadRoute = (urlPath, routerModule) => {
   try {
-    const router = require(filePath)
-    app.use(urlPath, router)
+    app.use(urlPath, routerModule)
     console.log(`✅ ${urlPath}`)
   } catch(e) {
     console.warn(`⚠️ Skipped ${urlPath}:`, e.message)
   }
 }
 
-// Load all routes
-loadRoute('/api/pages', './routes/pages.routes')
-loadRoute('/api/public', './routes/public.routes')
-loadRoute('/api/components', './routes/components.routes')
-loadRoute('/api/user', './routes/user.routes')
-loadRoute('/api/workspaces', './routes/workspace.routes')
-loadRoute('/api/comments', './routes/comment.routes')
+loadRoute('/api/pages', require('./routes/pages.routes'))
+loadRoute('/api/public', require('./routes/public.routes'))
+loadRoute('/api/components', require('./routes/components.routes'))
+loadRoute('/api/user', require('./routes/user.routes'))
+loadRoute('/api/workspaces', require('./routes/workspace.routes'))
+loadRoute('/api/comments', require('./routes/comment.routes'))
 
 // Serve Angular for ALL non-API routes
 app.get('*', (req, res) => {
