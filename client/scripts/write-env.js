@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const defaultApiUrl = process.env.VERCEL
-  ? 'https://server-five-khaki-66.vercel.app/api'
+  ? '/api'
   : 'http://localhost:5000/api';
 const apiUrl = (process.env.API_URL || defaultApiUrl).trim();
 const target = path.join(__dirname, '..', 'public', 'env.js');
