@@ -126,6 +126,62 @@ app.get('*', (req, res) => {
   })
 })
 
+// ── MongoDB Connection Helper (Serverless & Traditional) ─
+const connectDB = async () => {
+  const state = mongoose.connection.readyState;
+  if (state === 1) {
+    return mongoose.connection;
+  }
+
+  // If already connecting, wait for it
+  if (state === 2) {
+    await new Promise((resolve) => {
+      mongoose.connection.once('connected', resolve);
+    });
+    return mongoose.connection;
+  }
+
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    throw new Error('MONGO_URI is not set in environment variables');
+  }
+
+  await mongoose.connect(uri, {
+    retryWrites:               true,
+    w:                         'majority',
+    serverSelectionTimeoutMS:  10000,
+    socketTimeoutMS:           45000,
+    connectTimeoutMS:          10000,
+    maxPoolSize:               15,
+    minPoolSize:               1,
+    family:                    4
+  });
+  console.log('✅ MongoDB Connected!');
+  return mongoose.connection;
+};
+
+// Database connection middleware for every incoming API request
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    try {
+      await connectDB();
+      next();
+    } catch (err) {
+      console.error('❌ Mongoose Connection Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection failed',
+        error: err.message
+      });
+    }
+  } else {
+    next();
+  }
+});
+
+// Trigger connection immediately during function initialization (fire and forget)
+connectDB().catch(err => console.error('Initial DB connection error:', err.message));
+
 // ── Global error handler ──────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('Server error:', err.message)
@@ -135,52 +191,14 @@ app.use((err, req, res, next) => {
   })
 })
 
-// ── MongoDB connection with retry ─────────────────────────
-const connectDB = async () => {
-  const uri = process.env.MONGO_URI
-  if (!uri) {
-    console.error('❌ MONGO_URI not set — set it in .env or env vars!')
-    process.exit(1)
-  }
-  try {
-    await mongoose.connect(uri, {
-      retryWrites:               true,
-      w:                         'majority',
-      serverSelectionTimeoutMS:  10000,
-      socketTimeoutMS:           45000,
-      connectTimeoutMS:          10000,
-      maxPoolSize:               20,       // increased pool for concurrency
-      minPoolSize:               2,        // keep min connections warm
-      family:                    4,
-      heartbeatFrequencyMS:      10000,
-    })
-    console.log('✅ MongoDB Atlas Connected!')
-    console.log('📦 DB:', mongoose.connection.name)
-  } catch (err) {
-    console.error('❌ MongoDB Error:', err.message)
-    console.log('🔄 Retrying in 5s...')
-    setTimeout(connectDB, 5000)
-  }
+// ── Start server (for traditional environments like Render/Local)
+const PORT = process.env.PORT || 3000;
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Traditional Server running on port ${PORT}`);
+    console.log(`📁 Angular dist: ${angularDist}`);
+  });
 }
 
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️  MongoDB disconnected — reconnecting...')
-  setTimeout(connectDB, 3000)
-})
+module.exports = app;
 
-mongoose.connection.on('error', err => {
-  console.error('❌ MongoDB connection error:', err.message)
-})
-
-// ── Start server ──────────────────────────────────────────
-const PORT = process.env.PORT || 3000
-
-connectDB().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on port ${PORT}`)
-    console.log(`📁 Angular dist: ${angularDist}`)
-    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`)
-  })
-})
-
-module.exports = app
