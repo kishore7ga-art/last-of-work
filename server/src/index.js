@@ -51,18 +51,6 @@ app.use(express.static(angularDist, {
   index: false           // let SPA fallback handle /
 }))
 
-// ── Health check ──────────────────────────────────────────
-app.get('/api/health', async (req, res) => {
-  const state = mongoose.connection.readyState
-  res.json({
-    status: 'ok',
-    database: state === 1 ? 'connected' : 'disconnected',
-    connected: state === 1,
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    uptime: Math.floor(process.uptime())
-  })
-})
 
 // ── API Routes ────────────────────────────────────────────
 try {
@@ -181,6 +169,20 @@ app.use(async (req, res, next) => {
 
 // Trigger connection immediately during function initialization (fire and forget)
 connectDB().catch(err => console.error('Initial DB connection error:', err.message));
+
+// ── Health check (placed below connection middleware) ─────
+app.get('/api/health', async (req, res) => {
+  const state = mongoose.connection.readyState;
+  res.json({
+    status: 'ok',
+    database: state === 1 ? 'connected' : 'disconnected',
+    connected: state === 1,
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    uptime: Math.floor(process.uptime())
+  });
+});
+
 
 // ── Global error handler ──────────────────────────────────
 app.use((err, req, res, next) => {
