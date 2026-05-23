@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth.middleware');
+// Auth middleware removed
 const {
   createWorkspace,
   getUserWorkspaces,
@@ -19,7 +19,7 @@ const {
 router.get('/join', acceptInvite);
 
 // All other routes are protected
-router.use(protect);
+// protect middleware removed
 
 router.post('/', createWorkspace);
 router.get('/', getUserWorkspaces);

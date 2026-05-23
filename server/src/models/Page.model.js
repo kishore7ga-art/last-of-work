@@ -130,6 +130,8 @@ const pageSchema = new mongoose.Schema({
 pageSchema.index({ userId: 1, updatedAt: -1 });
 pageSchema.index({ slug: 1 }, { unique: true });
 pageSchema.index({ userId: 1, published: 1 });
+pageSchema.index({ updatedAt: -1 });
+pageSchema.index({ published: 1 });
 pageSchema.index({ title: 'text' }, { weights: { title: 10 } });
 
 pageSchema.pre('save', function updateTimestamp(next) {

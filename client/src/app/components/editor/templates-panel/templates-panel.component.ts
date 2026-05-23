@@ -24,7 +24,7 @@ export class TemplatesPanelComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
   private templateHtmlCache = new Map<string, SafeHtml>();
 
-  hoveredId = signal<string | null>(null);
+  hovered = signal<string | null>(null);
 
   // Search & Filters
   searchQuery = signal('');
@@ -164,24 +164,82 @@ export class TemplatesPanelComponent implements OnInit {
   }
 
   // Add template blocks to canvas
-  addTemplate(template: SectionTemplate) {
+  addTemplate(template: SectionTemplate): void {
+    // Generate fresh unique IDs for ALL blocks
     const timestamp = Date.now();
-    const newBlocks = template.blocks.map((block, index) =>
-      this.cloneTemplateBlock(block, `${timestamp}-${index}`)
+    
+    const newBlocks = template.blocks.map(
+      (block, i) => this.cloneBlockWithNewId(
+        block, timestamp, i
+      )
     );
-
-    this.store.addMultipleBlocks(newBlocks, undefined, 'template-added');
+    
+    // Verify blocks have valid types
+    const validBlocks = newBlocks.filter(b => {
+      const valid = this.store.isValidBlockType(b.type);
+      if (!valid) {
+        console.warn('Skipping invalid block type:', b.type);
+      }
+      return valid;
+    });
+    
+    if (validBlocks.length === 0) {
+      this.toast.show('Template has no valid blocks', 'error');
+      return;
+    }
+    
+    // Add all in ONE operation
+    this.store.addMultipleBlocks(validBlocks);
     this.trackRecent(template.id);
-    this.toast.success(`✓ ${template.name} added to canvas`);
+    
+    // Select first added block
+    setTimeout(() => {
+      this.store.selectBlock(validBlocks[0].id);
+      
+      // Scroll to first block
+      const el = document.getElementById('block-' + validBlocks[0].id);
+      el?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }, 50);
+    
+    this.toast.show(
+      `✓ ${template.name} added — ${validBlocks.length} blocks`,
+      'success'
+    );
   }
 
-  private cloneTemplateBlock(block: CanvasBlock, idSeed: string): CanvasBlock {
-    const cloned = JSON.parse(JSON.stringify(block)) as CanvasBlock;
-    const refresh = (item: CanvasBlock, suffix: string) => {
-      item.id = `block-${idSeed}-${suffix}-${Math.random().toString(36).slice(2, 7)}`;
-      item.children?.forEach((child, childIndex) => refresh(child, `${suffix}-${childIndex}`));
+  // Deep clone block with new ID
+  private cloneBlockWithNewId(
+    block: any, 
+    timestamp: number, 
+    index: number
+  ): CanvasBlock {
+    const newId = 
+      `${timestamp}-${index}-` +
+      Math.random().toString(36).slice(2, 7);
+    
+    const cloned = {
+      ...block,
+      id: newId,
+      animation: block.animation 
+        ? { ...block.animation } 
+        : undefined,
+      props: { ...block.props },
     };
-    refresh(cloned, '0');
+    
+    // Clone children recursively
+    if (block.children?.length) {
+      cloned.children = block.children.map(
+        (child: any, ci: number) => 
+          this.cloneBlockWithNewId(
+            child, timestamp, 
+            index * 100 + ci
+          )
+      );
+    }
+    
     return cloned;
   }
 
@@ -213,21 +271,87 @@ export class TemplatesPanelComponent implements OnInit {
     return item.id;
   }
 
-  getTemplateHTML(template: SectionTemplate): SafeHtml {
+  getTemplatePreviewHTML(template: SectionTemplate): SafeHtml {
     const cached = this.templateHtmlCache.get(template.id);
     if (cached) return cached;
 
-    let html = '<div style="font-family:Inter,sans-serif;width:100%;overflow:hidden;">'
-    
-    template.blocks.forEach(block => {
-      html += this.renderBlockPreview(block)
-    })
-    
-    html += '</div>'
-    
-    const safeHtml = this.sanitizer.bypassSecurityTrustHtml(html)
-    this.templateHtmlCache.set(template.id, safeHtml)
-    return safeHtml
+    const renderBlock = (block: any): string => {
+      const p = block.props || {}
+      switch(block.type) {
+        case 'section':
+          return `<div style="
+            background:${p.backgroundColor||'#f8fafc'};
+            padding:${p.padding||'24px'};
+            width:100%;box-sizing:border-box">
+            ${(block.children||[])
+              .map(renderBlock).join('')}
+          </div>`
+        case 'heading':
+          return `<h2 style="
+            font-size:${p.fontSize||'28px'};
+            font-weight:${p.fontWeight||'700'};
+            color:${p.color||'#111827'};
+            text-align:${p.textAlign||'left'};
+            margin:0;padding:4px 0;
+            line-height:1.2">
+            ${p.content||'Heading'}
+          </h2>`
+        case 'text':
+          return `<p style="
+            font-size:${p.fontSize||'14px'};
+            color:${p.color||'#374151'};
+            text-align:${p.textAlign||'left'};
+            margin:0;padding:4px 0;
+            line-height:1.5">
+            ${p.content||'Text content'}
+          </p>`
+        case 'button':
+          return `<div style="padding:6px 0">
+            <span style="
+              display:inline-block;
+              background:${p.backgroundColor
+                ||'#4f6ef7'};
+              color:${p.color||'#fff'};
+              padding:${p.padding||'8px 20px'};
+              border-radius:${p.borderRadius||'6px'};
+              font-size:13px;font-weight:600">
+              ${p.label||'Button'}
+            </span>
+          </div>`
+        case 'image':
+          return `<div style="
+            width:100%;height:80px;
+            background:linear-gradient(
+              135deg,#e2e8f0,#cbd5e1);
+            border-radius:${p.borderRadius||'4px'};
+            display:flex;align-items:center;
+            justify-content:center;
+            color:#94a3b8;font-size:11px">
+            📷 Image
+          </div>`
+        case 'divider':
+          return `<hr style="
+            border:none;
+            border-top:1px solid 
+              ${p.color||'#e5e7eb'};
+            margin:8px 0"/>`
+        default:
+          return `<div style="
+            height:30px;background:#f1f5f9;
+            border-radius:4px;margin:4px 0">
+          </div>`
+      }
+    }
+
+    const html = `
+      <div style="font-family:Inter,sans-serif;
+        width:900px;">
+        ${template.blocks.map(renderBlock).join('')}
+      </div>`
+
+    const safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.templateHtmlCache.set(template.id, safeHtml);
+    return safeHtml;
   }
 
   renderBlockPreview(block: CanvasBlock): string {

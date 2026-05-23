@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, shareReplay, catchError, tap } from 'rxjs';
-import { CanvasBlock, GlobalStyles, PageVersion } from '../store/builder.models';
-import { getApiBaseUrl } from '../config/api.config';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface PageSeo {
   metaTitle?: string;
@@ -23,7 +23,7 @@ export interface Page {
   title: string;
   slug: string;
   description?: string;
-  blocks: CanvasBlock[];
+  blocks: any[];
   thumbnail?: string;
   published: boolean;
   publishedAt?: string;
@@ -35,119 +35,112 @@ export interface Page {
   ogImage?: string;
   canonicalUrl?: string;
   customDomain?: string;
-  globalStyles?: GlobalStyles;
+  globalStyles?: any;
   workspaceId?: string;
   updatedAt: string;
   createdAt?: string;
 }
 
-type OnePageResponse = { success: boolean; page: Page };
-type PagesResponse = { success: boolean; count: number; pages: Page[] };
-type VersionsResponse = { success: boolean; versions: PageVersion[] };
-type ContentResponse = { success?: boolean; content: string };
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class PageApiService {
   private http = inject(HttpClient);
-  private apiUrl = `${getApiBaseUrl()}/pages`;
-  private pagesCache$: Observable<Page[]> | null = null;
-
-  invalidateCache(): void {
-    this.pagesCache$ = null;
-  }
+  private api = environment.apiUrl;
+  
+  private cache = new Map<string, any>();
 
   getPages(): Observable<Page[]> {
-    if (this.pagesCache$) return this.pagesCache$;
-
-    this.pagesCache$ = this.http.get<PagesResponse>(this.apiUrl).pipe(
-      map(res => res.pages),
-      shareReplay({
-        bufferSize: 1,
-        refCount: true,
-        windowTime: 30000 // Cache 30 seconds
-      }),
-      catchError(err => {
-        this.invalidateCache();
-        throw err;
-      })
-    );
-    return this.pagesCache$;
+    return this.http
+      .get<any>(`${this.api}/pages`)
+      .pipe(
+        map(r => r.pages || []),
+        catchError(() => of([]))
+      );
   }
 
   getPage(id: string): Observable<Page> {
-    return this.http.get<OnePageResponse>(`${this.apiUrl}/${id}`).pipe(map(res => res.page));
+    return this.http
+      .get<any>(`${this.api}/pages/${id}`)
+      .pipe(
+        map(r => r.page),
+        catchError((err) => {
+          console.error('Error fetching page:', err);
+          throw err;
+        })
+      );
   }
 
-  createPage(dataOrTitle: Partial<Page> | string, slug?: string): Observable<Page> {
-    const body = typeof dataOrTitle === 'string'
-      ? { title: dataOrTitle, slug }
-      : dataOrTitle;
-
-    return this.http.post<OnePageResponse>(this.apiUrl, body).pipe(
-      map(res => res.page),
-      tap(() => this.invalidateCache())
-    );
+  createPage(data: Partial<Page>): Observable<Page> {
+    this.cache.clear();
+    return this.http
+      .post<any>(`${this.api}/pages`, data)
+      .pipe(map(r => r.page));
   }
 
-  updatePage(id: string, data: Partial<Page>): Observable<Page> {
-    return this.http.put<OnePageResponse>(`${this.apiUrl}/${id}`, data).pipe(
-      map(res => res.page),
-      tap(() => this.invalidateCache())
-    );
+  updatePage(id: string, data: any): Observable<Page> {
+    this.cache.clear();
+    return this.http
+      .put<any>(`${this.api}/pages/${id}`, data)
+      .pipe(map(r => r.page));
   }
 
   deletePage(id: string): Observable<void> {
-    return this.http.delete<{ success: boolean; message: string }>(`${this.apiUrl}/${id}`).pipe(
-      map(() => undefined),
-      tap(() => this.invalidateCache())
+    this.cache.clear();
+    return this.http
+      .delete<void>(`${this.api}/pages/${id}`);
+  }
+
+  publishPage(id: string): Observable<any> {
+    this.cache.clear();
+    return this.http.post<any>(
+      `${this.api}/pages/${id}/publish`, {}
     );
   }
 
-  publishPage(id: string): Observable<Page> {
-    return this.http.post<OnePageResponse & { published: boolean }>(`${this.apiUrl}/${id}/publish`, {}).pipe(
-      map(res => res.page),
-      tap(() => this.invalidateCache())
+  togglePublish(id: string): Observable<any> {
+    this.cache.clear();
+    return this.http.post<any>(
+      `${this.api}/pages/${id}/publish`, {}
     );
   }
 
   duplicatePage(id: string): Observable<Page> {
-    return this.http.post<OnePageResponse>(`${this.apiUrl}/${id}/duplicate`, {}).pipe(
-      map(res => res.page),
-      tap(() => this.invalidateCache())
-    );
+    this.cache.clear();
+    return this.http
+      .post<any>(`${this.api}/pages/${id}/duplicate`, {})
+      .pipe(map(r => r.page));
   }
 
-  savePage(id: string, blocks: CanvasBlock[]): Observable<Page> {
-    return this.updatePage(id, { blocks });
-  }
-
-  togglePublish(id: string): Observable<{ published: boolean; page: Page }> {
-    return this.http.post<OnePageResponse & { published: boolean }>(`${this.apiUrl}/${id}/publish`, {}).pipe(
-      map(res => ({ published: res.published, page: res.page })),
-      tap(() => this.invalidateCache())
-    );
-  }
-
-  getVersions(id: string): Observable<PageVersion[]> {
-    return this.http.get<VersionsResponse>(`${this.apiUrl}/${id}/versions`).pipe(map(res => res.versions));
+  getVersions(id: string): Observable<any[]> {
+    return this.http
+      .get<any>(`${this.api}/pages/${id}/versions`)
+      .pipe(
+        map(r => r.versions || []),
+        catchError(() => of([]))
+      );
   }
 
   restoreVersion(id: string, versionId: string): Observable<Page> {
-    return this.http.post<OnePageResponse>(`${this.apiUrl}/${id}/versions/${versionId}/restore`, {}).pipe(
-      map(res => res.page),
-      tap(() => this.invalidateCache())
-    );
+    this.cache.clear();
+    return this.http
+      .post<any>(`${this.api}/pages/${id}/versions/${versionId}/restore`, {})
+      .pipe(map(r => r.page));
   }
 
   generateContent(prompt: string, context?: string): Observable<{ content: string }> {
-    return this.http.post<ContentResponse>(`${this.apiUrl}/ai/generate`, { prompt, context }).pipe(
-      map(res => ({ content: res.content }))
-    );
+    return this.http
+      .post<any>(`${this.api}/pages/ai/generate`, { prompt, context })
+      .pipe(map(r => ({ content: r.content })));
   }
 
-  getPublicPage(slug: string): Observable<Page> {
-    return this.http.get<OnePageResponse>(`${this.apiUrl}/public/${slug}`).pipe(map(res => res.page));
+  getPublishedPage(slug: string): Observable<Page> {
+    return this.http
+      .get<any>(`${this.api}/public/${slug}`)
+      .pipe(
+        map(r => r.page),
+        catchError((err) => {
+          console.error('Error fetching published page:', err);
+          throw err;
+        })
+      );
   }
 }

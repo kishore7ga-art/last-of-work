@@ -1,20 +1,14 @@
 services:
   - type: web
-    name: angular-page-builder-api
+    name: mybuilder
     runtime: node
     rootDir: server
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install && cd ../client && npm install && npx ng build --configuration production
+    startCommand: node src/index.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
         sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: CLIENT_URL
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_MODEL
-        value: gpt-4.1-mini
+      - key: PORT
+        value: 3000

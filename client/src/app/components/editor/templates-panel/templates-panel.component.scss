@@ -157,9 +157,10 @@
 
 .template-preview-wrapper {
   position: relative;
-  height: 160px;
+  height: 140px;
   overflow: hidden;
-  background: #ffffff;
+  background: #fff;
+  border-radius: 8px 8px 0 0;
 
   .heart-btn {
     position: absolute;
@@ -197,38 +198,34 @@
   }
 }
 
-.template-preview-scale {
+.preview-scale {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   width: 900px;
-  transform: scale(0.31);
+  transform: scale(0.295);
   transform-origin: top left;
   pointer-events: none;
 }
 
-.template-preview-content {
-  width: 100%;
-}
-
-.preview-overlay {
+.preview-hover-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(79,110,247,0.85);
+  background: rgba(79,110,247,0.88);
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  .add-btn {
-    background: white;
-    color: #4f6ef7;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-  }
+  z-index: 15;
+}
+
+.add-template-btn {
+  background: #fff;
+  color: #4f6ef7;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .template-info {

@@ -131,10 +131,11 @@ export class AutoSaveService {
     const pageId = this.currentPageId();
     if (!pageId) return;
     
+    // ← SHOW SPINNER
+    this.saveStatus.set('saving');
+    this.saveError.set(null);
+
     try {
-      this.saveStatus.set('saving');
-      this.saveError.set(null);
-      
       const payload = this.buildSavePayload();
       
       // Reset change flags after building payload
@@ -146,6 +147,7 @@ export class AutoSaveService {
         this.pageApi.updatePage(pageId, payload)
       );
       
+      // ← SHOW SUCCESS
       this.saveStatus.set('saved');
       const savedAt = new Date(updatedPage?.updatedAt ?? new Date());
       this.lastSavedAt.set(savedAt);
@@ -167,6 +169,7 @@ export class AutoSaveService {
       }, 3000);
       
     } catch (error: any) {
+      // ← SHOW ERROR
       this.saveStatus.set('error');
       this.saveError.set(
         error?.message || 'Save failed'

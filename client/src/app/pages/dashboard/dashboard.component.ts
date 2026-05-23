@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { PageApiService, Page } from '../../services/page-api.service';
-import { AuthService } from '../../services/auth.service';
 import { WorkspaceApiService, Workspace } from '../../services/workspace-api.service';
 import { ActivatedRoute } from '@angular/router';
 import { ToastService } from '../../services/toast.service';
@@ -59,7 +58,7 @@ import { ToastService } from '../../services/toast.service';
                 <span class="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 text-sm font-bold">
                   {{ userInitials() }}
                 </span>
-                <span class="hidden text-sm font-medium sm:block">{{ auth.user()?.name || 'User' }}</span>
+                <span class="hidden text-sm font-medium sm:block">Default User</span>
               </button>
 
               <div *ngIf="userMenuOpen()" class="absolute right-0 z-20 mt-2 w-44 rounded-lg border border-[#2a2a3d] bg-[#151520] p-1 shadow-2xl">
@@ -265,7 +264,6 @@ import { ToastService } from '../../services/toast.service';
 export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private pageApi = inject(PageApiService);
-  auth = inject(AuthService);
   private workspaceApi = inject(WorkspaceApiService);
   private route = inject(ActivatedRoute);
   private toast = inject(ToastService);
@@ -427,12 +425,11 @@ export class DashboardComponent implements OnInit {
   }
 
   logout() {
-    this.auth.logout();
+    this.toast.info('Logged out (Demo mode)');
   }
 
   userInitials() {
-    const name = this.auth.user()?.name || 'User';
-    return name.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'U';
+    return 'DU';
   }
 
   pageInitials(title: string) {

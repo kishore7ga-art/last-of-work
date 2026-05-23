@@ -216,8 +216,8 @@ export class PublishedPageComponent implements OnInit, OnDestroy {
   }
 
   loadPublishedPage(slug: string) {
-    this.pageApi.getPublicPage(slug).subscribe({
-      next: (page) => {
+    this.pageApi.getPublishedPage(slug).subscribe({
+      next: (page: Page) => {
         this.blocks.set(page.blocks || []);
         if (page.globalStyles) {
           this.globalStyles.set(page.globalStyles);
@@ -228,7 +228,7 @@ export class PublishedPageComponent implements OnInit, OnDestroy {
         this.setSEO(page);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error.set(err.error?.message || 'Page not found or not published.');
         this.loading.set(false);
       }

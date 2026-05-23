@@ -1,30 +1,18 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { 
-    path: 'login', 
-    loadComponent: () => import('./pages/auth/login.component').then(m => m.LoginComponent) 
-  },
-  { 
-    path: 'register', 
-    loadComponent: () => import('./pages/auth/register.component').then(m => m.RegisterComponent) 
-  },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { 
     path: 'dashboard', 
-    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard] 
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
   },
   { 
     path: 'editor/new', 
-    loadComponent: () => import('./pages/editor-page/editor-page.component').then(m => m.EditorPageComponent),
-    canActivate: [authGuard] 
+    loadComponent: () => import('./pages/editor-page/editor-page.component').then(m => m.EditorPageComponent)
   },
   { 
     path: 'editor/:id', 
-    loadComponent: () => import('./pages/editor-page/editor-page.component').then(m => m.EditorPageComponent),
-    canActivate: [authGuard] 
+    loadComponent: () => import('./pages/editor-page/editor-page.component').then(m => m.EditorPageComponent)
   },
   { 
     path: 'preview/:id', 
@@ -36,8 +24,7 @@ export const routes: Routes = [
   },
   { 
     path: 'workspace/:id', 
-    loadComponent: () => import('./pages/workspace-dashboard/workspace-dashboard.component').then(m => m.WorkspaceDashboardComponent),
-    canActivate: [authGuard] 
+    loadComponent: () => import('./pages/workspace-dashboard/workspace-dashboard.component').then(m => m.WorkspaceDashboardComponent)
   },
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: 'dashboard' }
 ];

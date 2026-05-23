@@ -26,9 +26,12 @@ import { IconBlockComponent } from '../../blocks/icon-block/icon-block.component
 import { HtmlBlockComponent } from '../../blocks/html-block/html-block.component';
 import { MapBlockComponent } from '../../blocks/map-block/map-block.component';
 import { SectionBlockComponent } from '../../blocks/section-block/section-block.component';
+import { FallbackBlockComponent } from '../../blocks/fallback-block/fallback-block.component';
 import { CanvasBlock } from '../../../store/builder.models';
 import { ToastService } from '../../../services/toast.service';
 import { TEMPLATE_GROUPS } from '../../../data/templates.data';
+import { Type } from '@angular/core';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-canvas',
@@ -51,17 +54,60 @@ import { TEMPLATE_GROUPS } from '../../../data/templates.data';
     IconBlockComponent,
     HtmlBlockComponent,
     MapBlockComponent,
-    SectionBlockComponent
+    SectionBlockComponent,
+    FallbackBlockComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss']
 })
 export class CanvasComponent implements OnInit, OnDestroy {
-  store = inject(BuilderStore);
-  private toastService = inject(ToastService);
   private ngZone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
+  store = inject(BuilderStore);
+  environment = environment;
+  private toastService = inject(ToastService);
+
+  private componentRegistry = new Map<string, Type<any>>([
+    ['text',        TextBlockComponent],
+    ['heading',     TextBlockComponent], // Map heading to TextBlockComponent
+    ['image',       ImageBlockComponent],
+    ['button',      ButtonBlockComponent],
+    ['section',     SectionBlockComponent],
+    ['divider',     DividerBlockComponent],
+    ['spacer',      SpacerBlockComponent],
+    ['video',       VideoBlockComponent],
+    ['columns',     ColumnsBlockComponent],
+    ['card',        CardBlockComponent],
+    ['form',        FormBlockComponent],
+    ['html',        HtmlBlockComponent],
+    ['icon',        IconBlockComponent],
+    ['map',         MapBlockComponent],
+  ]);
+
+  getComponent(type: string): Type<any> {
+    return this.componentRegistry.get(type) || FallbackBlockComponent;
+  }
+
+  getComponentInputs(block: CanvasBlock): any {
+    return {
+      props: this.store.getActiveProps(block),
+      blockId: block.id,
+      isHeading: block.type === 'heading',
+      isEditing: true
+    };
+  }
+
+  getMobileProps(block: CanvasBlock): any {
+    const activeProps = this.store.getActiveProps(block);
+    const mobileProps = block.mobileProps || {};
+    return {
+      props: { ...activeProps, ...mobileProps },
+      blockId: block.id,
+      isHeading: block.type === 'heading',
+      isEditing: true
+    };
+  }
 
   previewAnimations = signal(false);
   isDragging = signal(false);
@@ -149,10 +195,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  hasMobileOverrides(block: CanvasBlock): boolean {
-    return block.mobileProps !== undefined && block.mobileProps !== null && Object.keys(block.mobileProps).length > 0;
-  }
-
   onCanvasClick(event: MouseEvent) {
     if (
       (event.target as HTMLElement).classList.contains('canvas-shell') || 
@@ -175,109 +217,24 @@ export class CanvasComponent implements OnInit, OnDestroy {
     });
   }
 
-  // For sidebar drag to canvas:
   onSidebarDrop(event: CdkDragDrop<any>): void {
     this.ngZone.run(() => {
-    if (event.previousContainer === event.container) {
-      // Reorder within canvas
-      this.store.reorderBlocks(
-        event.previousIndex,
-        event.currentIndex
-      );
-    } else {
-      // Drop from sidebar to canvas
-      const data = event.item.data;
-      if (typeof data === 'string') {
-        const blockType = data as any;
-        this.store.addBlockAt(blockType, event.currentIndex);
-      } else if (data?.isNew) {
-        this.store.addBlockAt(data.type, event.currentIndex);
-      } else if (data?.savedComponent) {
-        this.store.addSavedComponentAtIndex(data.savedComponent, event.currentIndex);
-      } else if (data?.isTemplate && data.template) {
-        this.store.addTemplateBlocks(data.template.blocks, event.currentIndex);
-        this.toastService.success(`✓ ${data.template.name} added to canvas`);
-      } else if (data) {
-        this.store.addBlockAt(data, event.currentIndex);
+      if (event.previousContainer !== event.container) {
+        this.store.addBlockAt(
+          event.item.data,
+          event.currentIndex
+        );
+      } else {
+        this.store.reorderBlocks(
+          event.previousIndex,
+          event.currentIndex
+        );
       }
-    }
       this.cdr.markForCheck();
     });
   }
 
-  trackBlock(index: number, block: CanvasBlock): string {
-    return block.id;
-  }
-
-  addQuickTemplate(templateId: string) {
-    let matched: any = null;
-    TEMPLATE_GROUPS.forEach(g => {
-      const found = g.templates.find(t => t.id === templateId);
-      if (found) {
-        matched = found;
-      }
-    });
-    if (matched) {
-      const addedBlockIds = this.store.addTemplateBlocks(matched.blocks);
-      this.toastService.success(`✓ ${matched.name} added to canvas`);
-      setTimeout(() => {
-        const element = document.querySelector(`[data-block-id="${addedBlockIds[0]}"]`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    }
-  }
-
-  getSectionStyles(block: CanvasBlock) {
-    const props = this.store.getActiveProps(block);
-    const useColors = props['useThemeColors'] !== false;
-    const useRadius = props['useThemeRadius'] !== false;
-
-    let bgColor = props.backgroundColor;
-    if (useColors && (!bgColor || bgColor === '#ffffff' || bgColor === '#f9fafb' || bgColor === '#f8fafc' || bgColor === '#111827' || bgColor === '#0f172a')) {
-      bgColor = 'var(--theme-surface)';
-    }
-
-    let radius = props.borderRadius;
-    if (useRadius && (!radius || radius === '0px' || radius === '8px')) {
-      radius = 'var(--theme-radius-card)';
-    }
-
-    return {
-      'background-color': bgColor,
-      padding: props.padding,
-      'min-height': props.minHeight,
-      width: props.width,
-      margin: props.margin,
-      border: props.border,
-      'border-radius': radius,
-      background: props['gradientFrom'] && props['gradientTo'] 
-        ? `linear-gradient(135deg, ${props['gradientFrom']}, ${props['gradientTo']})` 
-        : (props.src ? `url(${props.src}) center/cover no-repeat` : undefined),
-    };
-  }
-
-  getInputStyles(block: CanvasBlock) {
-    const props = this.store.getActiveProps(block);
-    return {
-      width: props.width,
-      padding: props.padding,
-      border: props.border,
-      'border-radius': props.borderRadius,
-      color: props.color,
-      'background-color': props.backgroundColor,
-      margin: props.margin
-    };
-  }
-
-  getMobileProps(block: CanvasBlock): any {
-    const mobileProps = block.mobileProps;
-    const activeProps = this.store.getActiveProps(block);
-    if (!mobileProps) return activeProps;
-    
-    return { ...activeProps, ...mobileProps };
-  }
+  trackBlock = (i: number, b: CanvasBlock) => b.id;
 
   getGlobalStyles() {
     const styles = this.store.globalStyles();

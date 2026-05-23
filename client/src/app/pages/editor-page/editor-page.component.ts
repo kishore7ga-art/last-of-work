@@ -17,7 +17,6 @@ import { SettingsModalComponent } from '../../components/editor/settings-modal/s
 import { CommentsPanelComponent } from '../../components/editor/comments-panel/comments-panel.component';
 import { CommentApiService } from '../../services/comment-api.service';
 import { SocketService } from '../../services/socket.service';
-import { AuthService } from '../../services/auth.service';
 import { MobileOrderPanelComponent } from '../../components/editor/mobile-order-panel/mobile-order-panel.component';
 import { ThemeSwitcherComponent } from '../../components/theme-switcher/theme-switcher.component';
 import { ThemeService } from '../../services/theme.service';
@@ -184,7 +183,6 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   socketService = inject(SocketService);
-  authService = inject(AuthService);
   private commentApi = inject(CommentApiService);
   private themeService = inject(ThemeService);
   autoSave = inject(AutoSaveService);
@@ -264,8 +262,8 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         this.socketService.connect();
         this.socketService.joinPage(this.pageId);
         
-        const currentUser = this.authService.user();
-        const currentUserId = currentUser ? currentUser._id : null;
+        const currentUser = { _id: '000000000000000000000001', name: 'Default User', email: 'default@user.com' };
+        const currentUserId = currentUser._id;
 
         this.socketService.onBlockChanged((data) => {
           if (data.updatedBy !== currentUserId) {

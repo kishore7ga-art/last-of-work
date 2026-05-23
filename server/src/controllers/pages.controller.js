@@ -1,6 +1,8 @@
 const Page = require('../models/Page.model');
 const { apiCache } = require('../middleware/cache.middleware');
 
+const DEFAULT_USER_ID = '000000000000000000000001';
+
 const createVersion = (page, label) => ({
   _id: new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 8),
   pageId: page._id.toString(),
@@ -30,14 +32,11 @@ const mapLegacySeo = (body, updates) => {
 
 exports.getAllPages = async (req, res, next) => {
   try {
-    const pages = await Page.find({})
-      .select(
-        'title slug published updatedAt thumbnail viewCount seo.metaTitle'
-      )
+    const pages = await Page.find()
+      .select('title slug published updatedAt thumbnail viewCount')
       .sort({ updatedAt: -1 })
-      .limit(50)
-      .lean()
-      .exec();
+      .limit(100)
+      .lean();
 
     res.status(200).json({ success: true, count: pages.length, pages });
   } catch (error) {
@@ -47,9 +46,7 @@ exports.getAllPages = async (req, res, next) => {
 
 exports.getPage = async (req, res, next) => {
   try {
-    const page = await Page.findOne({ _id: req.params.id })
-      .lean()
-      .exec();
+    const page = await Page.findById(req.params.id).lean();
 
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found' });
@@ -67,11 +64,11 @@ exports.createPage = async (req, res, next) => {
     const slug = Page.generateSlug(title || 'untitled');
 
     const page = await Page.create({
+      ...req.body,
       title: title || 'Untitled Page',
-      slug,
       description: description || '',
-      blocks: [],
-      userId: req.user._id
+      userId: DEFAULT_USER_ID,
+      slug
     });
 
     if (apiCache) {
@@ -86,9 +83,7 @@ exports.createPage = async (req, res, next) => {
 
 exports.updatePage = async (req, res, next) => {
   try {
-    const existingPage = await Page.findOne({ _id: req.params.id })
-      .lean()
-      .exec();
+    const existingPage = await Page.findById(req.params.id).lean();
 
     if (!existingPage) {
       return res.status(404).json({ success: false, message: 'Page not found' });
@@ -114,8 +109,7 @@ exports.updatePage = async (req, res, next) => {
 
     // Smart merge settings
     if (allowedUpdates.settings && existingPage.settings) {
-      const existingSettings = existingPage.settings.toObject ? existingPage.settings.toObject() : existingPage.settings;
-      allowedUpdates.settings = { ...existingSettings, ...allowedUpdates.settings };
+      allowedUpdates.settings = { ...existingPage.settings, ...allowedUpdates.settings };
     }
 
     mapLegacySeo(req.body, allowedUpdates);
@@ -124,20 +118,13 @@ exports.updatePage = async (req, res, next) => {
       allowedUpdates.versions = [createVersion(existingPage), ...(existingPage.versions || [])].slice(0, 20);
     }
 
-    const page = await Page.findOneAndUpdate(
-      { _id: req.params.id },
-      { 
-        $set: {
-          ...allowedUpdates,
-          updatedAt: new Date()
-        }
-      },
-      { 
-        new: true, 
-        runValidators: true,
-        lean: true,
-        select: '_id title slug updatedAt published'
-      }
+    const page = await Page.findByIdAndUpdate(
+      req.params.id,
+      { $set: {
+        ...allowedUpdates,
+        updatedAt: new Date()
+      }},
+      { new: true, lean: true }
     );
 
     if (apiCache) {
@@ -152,13 +139,11 @@ exports.updatePage = async (req, res, next) => {
 
 exports.deletePage = async (req, res, next) => {
   try {
-    const page = await Page.findOne({ _id: req.params.id });
+    const page = await Page.findByIdAndDelete(req.params.id);
 
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found' });
     }
-
-    await page.deleteOne();
 
     if (apiCache) {
       apiCache.flushAll();
@@ -172,7 +157,7 @@ exports.deletePage = async (req, res, next) => {
 
 exports.publishPage = async (req, res, next) => {
   try {
-    const page = await Page.findOne({ _id: req.params.id });
+    const page = await Page.findById(req.params.id);
 
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found' });
@@ -194,7 +179,7 @@ exports.publishPage = async (req, res, next) => {
 
 exports.duplicatePage = async (req, res, next) => {
   try {
-    const original = await Page.findOne({ _id: req.params.id }).lean().exec();
+    const original = await Page.findById(req.params.id).lean().exec();
 
     if (!original) {
       return res.status(404).json({ success: false, message: 'Page not found' });
@@ -206,7 +191,7 @@ exports.duplicatePage = async (req, res, next) => {
       description: original.description,
       blocks: original.blocks,
       thumbnail: original.thumbnail,
-      userId: req.user._id,
+      userId: DEFAULT_USER_ID,
       seo: original.seo,
       settings: original.settings,
       globalStyles: original.globalStyles,
@@ -230,7 +215,7 @@ exports.duplicatePage = async (req, res, next) => {
 
 exports.getPageVersions = async (req, res, next) => {
   try {
-    const page = await Page.findOne({ _id: req.params.id }).select('versions');
+    const page = await Page.findById(req.params.id).select('versions').lean();
 
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found' });
@@ -244,7 +229,7 @@ exports.getPageVersions = async (req, res, next) => {
 
 exports.restorePageVersion = async (req, res, next) => {
   try {
-    const page = await Page.findOne({ _id: req.params.id });
+    const page = await Page.findById(req.params.id);
 
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found' });

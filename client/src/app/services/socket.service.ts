@@ -1,7 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
-import { AuthService } from './auth.service';
 import { getApiBaseUrl } from '../config/api.config';
 
 export interface CollaboratorUser {
@@ -14,13 +13,12 @@ export interface CollaboratorUser {
 @Injectable({ providedIn: 'root' })
 export class SocketService {
   private socket: Socket | null = null;
-  private authService = inject(AuthService);
   
   activeUsers = signal<CollaboratorUser[]>([]);
 
   connect(): void {
-    const token = this.authService.getToken();
-    if (!token || this.socket?.connected) return;
+    const token = 'mock-token-123';
+    if (this.socket?.connected) return;
 
     const socketUrl = getApiBaseUrl().replace(/\/api$/, '');
     this.socket = io(socketUrl, {

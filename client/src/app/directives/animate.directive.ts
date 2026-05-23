@@ -5,310 +5,204 @@ import { BlockAnimation } from '../models/animation.models';
   selector: '[mbAnimate]',
   standalone: true
 })
-export class AnimateDirective implements OnInit, OnChanges, OnDestroy {
+export class AnimateDirective
+  implements OnInit, OnChanges, OnDestroy {
 
-  @Input('mbAnimate') animation!: BlockAnimation | undefined;
-  
-  // When true: plays immediately (editor preview)
-  @Input() mbAnimatePreview = false;
+  @Input('mbAnimate') animation?: BlockAnimation
+  @Input() mbPreview = false
 
-  private el = inject(ElementRef);
-  private observer: IntersectionObserver | null = null;
-  private twTimer: any = null;
-  private originalText = '';
-  private isPlaying = false;
+  private el = inject(ElementRef)
+  private observer: IntersectionObserver | null = null
+  private twTimer: any = null
+  private hasPlayed = false
+  private originalText = ''
+
+  private readonly DEFAULTS: Record<string, {
+    dur: number, ease: string
+  }> = {
+    fadeIn:        {dur:800, ease:'ease-out'},
+    fadeInUp:      {dur:700, ease:'ease-out'},
+    fadeInDown:    {dur:700, ease:'ease-out'},
+    fadeInLeft:    {dur:650, ease:'ease-out'},
+    fadeInRight:   {dur:650, ease:'ease-out'},
+    slideUp:       {dur:500, ease:
+      'cubic-bezier(0.25,0.46,0.45,0.94)'},
+    slideDown:     {dur:500, ease:
+      'cubic-bezier(0.25,0.46,0.45,0.94)'},
+    slideLeft:     {dur:450, ease:
+      'cubic-bezier(0.25,0.46,0.45,0.94)'},
+    slideRight:    {dur:450, ease:
+      'cubic-bezier(0.25,0.46,0.45,0.94)'},
+    zoomIn:        {dur:600, ease:
+      'cubic-bezier(0.175,0.885,0.32,1.275)'},
+    zoomOut:       {dur:700, ease:'ease-out'},
+    zoomInUp:      {dur:650, ease:
+      'cubic-bezier(0.175,0.885,0.32,1.275)'},
+    bounceIn:      {dur:800, ease:'linear'},
+    bounceInUp:    {dur:900, ease:'linear'},
+    bounceInDown:  {dur:900, ease:'linear'},
+    bounceInLeft:  {dur:850, ease:'linear'},
+    bounceInRight: {dur:850, ease:'linear'},
+    pulse:         {dur:1000,ease:'ease-in-out'},
+    bounce:        {dur:1200,ease:'linear'},
+    flipInX:       {dur:1000,ease:'linear'},
+    flipInY:       {dur:1000,ease:'linear'},
+    rotateIn:      {dur:900, ease:
+      'cubic-bezier(0.175,0.885,0.32,1.275)'},
+    shake:         {dur:600, ease:'ease-in-out'},
+    wobble:        {dur:1000,ease:'ease-in-out'},
+    wiggle:        {dur:800, ease:'ease-in-out'},
+    jello:         {dur:900, ease:'linear'},
+    heartBeat:     {dur:1300,ease:'ease-in-out'},
+    flash:         {dur:1000,ease:'ease-in-out'},
+    rubberBand:    {dur:1000,ease:'linear'},
+    blurIn:        {dur:900, ease:'ease-out'},
+    glitch:        {dur:800, ease:'steps(1)'},
+  }
 
   ngOnInit(): void {
-    this.setup();
+    setTimeout(() => this.init(), 150)
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['animation'] || changes['mbAnimatePreview']) {
-      this.cleanup();
-      this.setup();
+  ngOnChanges(c: SimpleChanges): void {
+    if (c['mbPreview']?.currentValue === true) {
+      setTimeout(() => this.play(), 50)
+    }
+    if (c['animation'] && !c['animation']
+        .firstChange) {
+      this.cleanup()
+      setTimeout(() => this.init(), 150)
     }
   }
 
-  setup(): void {
-    const anim = this.animation;
+  private init(): void {
+    const anim = this.animation
+    const el = this.el.nativeElement as HTMLElement
+
     if (!anim?.enabled || anim.type === 'none') {
-      // No animation: ensure visible
-      this.el.nativeElement.style.opacity = '';
-      this.el.nativeElement.classList.remove('mb-anim-ready', 'mb-anim-play');
-      return;
+      el.style.opacity = '1'
+      el.style.animation = ''
+      return
     }
 
-    if (this.mbAnimatePreview) {
-      // Editor preview: play immediately
-      this.playAnimation();
-      return;
+    if (this.mbPreview) {
+      this.play()
+      return
     }
 
-    // Set initial hidden state
-    this.el.nativeElement.classList.add('mb-anim-ready');
+    el.style.opacity = '0'
+    el.style.willChange = 'transform, opacity'
 
-    // Create IntersectionObserver
-    const documentContainer = document.querySelector('.drop-zone') || document.body;
     this.observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && !this.isPlaying) {
-            this.playAnimation();
-            if (anim.triggerOnce) {
-              this.observer?.unobserve(this.el.nativeElement);
-            }
-          } else if (!entry.isIntersecting && !anim.triggerOnce) {
-            this.resetAnimation();
+      entries => entries.forEach(e => {
+        if (e.isIntersecting && !this.hasPlayed) {
+          this.play()
+          if (anim.triggerOnce ?? true) {
+            this.observer?.unobserve(el)
           }
-        });
-      },
+        } else if (
+          !e.isIntersecting &&
+          !(anim.triggerOnce ?? true) &&
+          this.hasPlayed) {
+          this.reset()
+        }
+      }),
       {
-        threshold: anim.threshold || 0.15,
-        root: documentContainer,
-        rootMargin: '100px 0px'
+        threshold: anim.threshold ?? 0.1,
+        rootMargin: '0px 0px -50px 0px'
       }
-    );
-
-    this.observer.observe(this.el.nativeElement);
+    )
+    this.observer.observe(el)
   }
 
-  private NATURAL_DEFAULTS: Record<string, {
-    duration: number;
-    easing: string;
-  }> = {
-    fadeIn:       { duration: 800, easing: 'ease-out' },
-    fadeInUp:     { duration: 700, easing: 'ease-out' },
-    fadeInDown:   { duration: 700, easing: 'ease-out' },
-    fadeInLeft:   { duration: 650, easing: 'ease-out' },
-    fadeInRight:  { duration: 650, easing: 'ease-out' },
-    slideUp:      { duration: 500, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)' },
-    slideDown:    { duration: 500, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)' },
-    slideLeft:    { duration: 450, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)' },
-    slideRight:   { duration: 450, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)' },
-    zoomIn:       { duration: 600, easing: 'cubic-bezier(0.175,0.885,0.32,1.275)' },
-    zoomOut:      { duration: 700, easing: 'ease-out' },
-    zoomInUp:     { duration: 650, easing: 'cubic-bezier(0.175,0.885,0.32,1.275)' },
-    bounceIn:     { duration: 800, easing: 'linear' },
-    bounceInUp:   { duration: 900, easing: 'linear' },
-    bounceInDown: { duration: 900, easing: 'linear' },
-    bounceInLeft: { duration: 850, easing: 'linear' },
-    bounceInRight:{ duration: 850, easing: 'linear' },
-    pulse:        { duration: 1000, easing: 'ease-in-out' },
-    bounce:       { duration: 1200, easing: 'linear' },
-    flipInX:      { duration: 1000, easing: 'linear' },
-    flipInY:      { duration: 1000, easing: 'linear' },
-    rotateIn:     { duration: 900, easing: 'cubic-bezier(0.175,0.885,0.32,1.275)' },
-    shake:        { duration: 600, easing: 'ease-in-out' },
-    wobble:       { duration: 1000, easing: 'ease-in-out' },
-    wiggle:       { duration: 800, easing: 'ease-in-out' },
-    jello:        { duration: 900, easing: 'linear' },
-    heartBeat:    { duration: 1300, easing: 'ease-in-out' },
-    flash:        { duration: 1000, easing: 'ease-in-out' },
-    rubberBand:   { duration: 1000, easing: 'linear' },
-    blurIn:       { duration: 900, easing: 'ease-out' },
-    glitch:       { duration: 800, easing: 'steps(1)' }
-  };
-
-  playAnimation(): void {
-    const anim = this.animation!;
-    this.isPlaying = true;
+  private play(): void {
+    const anim = this.animation
+    if (!anim) return
+    const el = this.el.nativeElement as HTMLElement
+    this.hasPlayed = true
 
     if (anim.type === 'typewriter') {
-      this.playTypewriter();
-      return;
+      this.runTypewriter()
+      return
     }
 
-    const el = this.el.nativeElement as HTMLElement;
+    const def = this.DEFAULTS[anim.type]
+      || { dur: 600, ease: 'ease-out' }
 
-    // Remove ready class
-    el.classList.remove('mb-anim-ready');
-
-    // Clear any existing animation
-    el.style.animation = 'none';
-    void el.offsetHeight; // Force reflow
-
-    const defaults = this.NATURAL_DEFAULTS[anim.type]
-      || { duration: 600, easing: 'ease-out' };
-
-    // Use user-set duration OR natural default
-    const duration = anim.duration === 600
-      ? defaults.duration  // Still at default
-      : anim.duration;     // User customized it
-
-    const easing = anim.easing === 'ease-out'
-      ? defaults.easing    // Still at default
-      : anim.easing;       // User customized it
-
-    // Build animation value
-    const iterCount = 
+    const dur = anim.duration ?? def.dur
+    const ease = anim.easing === 'ease-out'
+      ? def.ease : (anim.easing ?? def.ease)
+    const delay = anim.delay ?? 0
+    const iter =
       anim.repeat === 'once' ? '1' :
       anim.repeat === 'loop' ? 'infinite' :
-      String(anim.repeat);
+      String(anim.repeat ?? 1)
 
-    el.style.animation = [
-      `mb-${anim.type}`,
-      `${duration}ms`,
-      easing,
-      `${anim.delay}ms`,
-      iterCount,
-      anim.direction,
-      'both'
-    ].join(' ');
+    el.style.animation = 'none'
+    el.style.opacity = '0'
 
-    // Add play classes
-    el.classList.add('mb-anim-play', `mb-${anim.type}`);
-
-    // Handle stagger for children
-    if (anim.stagger) {
-      this.applyStagger(el, anim);
-    }
-
-    // Reset isPlaying after animation
-    const totalTime = anim.delay + duration;
-    setTimeout(() => {
-      this.isPlaying = false;
-    }, totalTime + 100);
-  }
-
-  resetAnimation(): void {
-    const el = this.el.nativeElement as HTMLElement;
-    el.style.animation = 'none';
-    el.classList.remove('mb-anim-play');
-    el.classList.add('mb-anim-ready');
-    this.isPlaying = false;
-    void el.offsetHeight; // Force reflow
-  }
-
-  applyStagger(parent: HTMLElement, anim: BlockAnimation): void {
-    const children = Array.from(parent.children) as HTMLElement[];
-    
-    const defaults = this.NATURAL_DEFAULTS[anim.type]
-      || { duration: 600, easing: 'ease-out' };
-
-    const duration = anim.duration === 600
-      ? defaults.duration
-      : anim.duration;
-
-    const easing = anim.easing === 'ease-out'
-      ? defaults.easing
-      : anim.easing;
-
-    children.forEach((child, i) => {
-      child.style.opacity = '0';
-      child.style.animation = 'none';
-      
-      setTimeout(() => {
-        child.style.animation = [
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.opacity = ''
+        el.style.animation = [
           `mb-${anim.type}`,
-          `${duration}ms`,
-          easing,
-          '0ms',
-          '1',
-          'normal',
+          `${dur}ms`, ease,
+          `${delay}ms`, iter,
+          anim.direction ?? 'normal',
           'both'
-        ].join(' ');
-        child.style.opacity = '';
-        child.classList.add('mb-anim-play', `mb-${anim.type}`);
-      }, i * anim.staggerMs + anim.delay);
-    });
+        ].join(' ')
+      })
+    })
   }
 
-  playTypewriter(): void {
-    const el = this.el.nativeElement as HTMLElement;
-    const anim = this.animation!;
-    
-    // Get original text
-    this.originalText = el.textContent?.trim() || '';
-    
-    // Clear element
-    el.innerHTML = '';
-    el.style.opacity = '1';
-    el.style.visibility = 'visible';
-    el.classList.remove('mb-anim-ready');
-    
-    // Create text span and cursor
-    const textSpan = document.createElement('span');
-    el.appendChild(textSpan);
-    
-    let cursorEl: HTMLElement | null = null;
-    if (anim.twCursor) {
-      cursorEl = document.createElement('span');
-      cursorEl.className = 'mb-tw-cursor';
-      cursorEl.textContent = '|';
-      el.appendChild(cursorEl);
+  private reset(): void {
+    const el = this.el.nativeElement as HTMLElement
+    el.style.animation = 'none'
+    el.style.opacity = '0'
+    this.hasPlayed = false
+  }
+
+  private runTypewriter(): void {
+    const anim = this.animation!
+    const el = this.el.nativeElement as HTMLElement
+    this.originalText = el.textContent?.trim()||''
+    el.style.opacity = '1'
+    el.innerHTML = ''
+
+    const textSpan = document.createElement('span')
+    el.appendChild(textSpan)
+
+    if (anim.twCursor ?? true) {
+      const cursor = document.createElement('span')
+      cursor.className = 'mb-tw-cursor'
+      cursor.textContent = '|'
+      el.appendChild(cursor)
     }
-    
-    let i = 0;
-    const typeChar = () => {
-      if (i < this.originalText.length) {
-        textSpan.textContent += this.originalText[i];
-        i++;
-        this.twTimer = setTimeout(typeChar, anim.twSpeed);
-      } else {
-        // Done typing
-        this.isPlaying = false;
-        if (anim.twLoop) {
-          // Wait then delete
-          this.twTimer = setTimeout(() => {
-            this.deleteTypewriter(textSpan, cursorEl, anim);
-          }, 1500);
-        } else if (!anim.twCursor && cursorEl) {
-          // Remove cursor after done
-          setTimeout(() => {
-            cursorEl?.remove();
-          }, 600);
+
+    let i = 0
+    const speed = anim.twSpeed ?? 60
+    setTimeout(() => {
+      const type = () => {
+        if (i < this.originalText.length) {
+          textSpan.textContent +=
+            this.originalText[i++]
+          this.twTimer = setTimeout(type, speed)
         }
       }
-    };
-    
-    setTimeout(typeChar, anim.delay);
+      type()
+    }, anim.delay ?? 0)
   }
 
-  deleteTypewriter(textSpan: HTMLElement, cursorEl: HTMLElement | null, anim: BlockAnimation): void {
-    const deleteChar = () => {
-      const text = textSpan.textContent || '';
-      if (text.length > 0) {
-        textSpan.textContent = text.slice(0, -1);
-        this.twTimer = setTimeout(deleteChar, anim.twSpeed / 2);
-      } else {
-        // Restart
-        this.twTimer = setTimeout(() => {
-          let i = 0;
-          const reType = () => {
-            if (i < this.originalText.length) {
-              textSpan.textContent += this.originalText[i];
-              i++;
-              this.twTimer = setTimeout(reType, anim.twSpeed);
-            } else if (anim.twLoop) {
-              this.twTimer = setTimeout(() => {
-                this.deleteTypewriter(textSpan, cursorEl, anim);
-              }, 1500);
-            }
-          };
-          reType();
-        }, 300);
-      }
-    };
-    deleteChar();
+  private cleanup(): void {
+    this.observer?.disconnect()
+    this.observer = null
+    if (this.twTimer) clearTimeout(this.twTimer)
+    this.hasPlayed = false
+    const el = this.el.nativeElement as HTMLElement
+    el.style.animation = ''
+    el.style.opacity = ''
+    el.style.willChange = ''
   }
 
-  cleanup(): void {
-    this.observer?.disconnect();
-    this.observer = null;
-    clearTimeout(this.twTimer);
-    this.isPlaying = false;
-    
-    const el = this.el.nativeElement as HTMLElement;
-    el.style.animation = '';
-    el.style.opacity = '';
-    el.classList.remove('mb-anim-ready', 'mb-anim-play');
-    
-    // Remove all mb- classes
-    const toRemove = Array.from(el.classList).filter(c => c.startsWith('mb-'));
-    toRemove.forEach(c => el.classList.remove(c));
-  }
-
-  ngOnDestroy(): void {
-    this.cleanup();
-  }
+  ngOnDestroy(): void { this.cleanup() }
 }

@@ -5,7 +5,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { WorkspaceApiService, Workspace, WorkspaceMember, WorkspaceInvite, WorkspaceActivity } from '../../services/workspace-api.service';
 import { PageApiService, Page } from '../../services/page-api.service';
-import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
@@ -402,7 +401,6 @@ export class WorkspaceDashboardComponent implements OnInit {
   private pageApi = inject(PageApiService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  auth = inject(AuthService);
   private toast = inject(ToastService);
 
   workspaceId: string | null = null;
@@ -470,13 +468,13 @@ export class WorkspaceDashboardComponent implements OnInit {
   }
 
   isOwner() {
-    const user = this.auth.user();
+    const user = { _id: '000000000000000000000001', name: 'Default User', email: 'default@user.com' };
     return this.workspace()?.ownerId === user?._id;
   }
 
   isOwnerOrAdmin() {
     if (this.isOwner()) return true;
-    const user = this.auth.user();
+    const user = { _id: '000000000000000000000001', name: 'Default User', email: 'default@user.com' };
     const self = this.members().find(m => m.userId._id === user?._id);
     return self?.role === 'admin';
   }

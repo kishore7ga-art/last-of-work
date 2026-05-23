@@ -260,9 +260,8 @@ export class FileTreeService {
             visit(node.children);
           }
           
-          // If page is expanded, show its blocks
-          if (node.type === 'file' && expandedIds.has(node.id) && node.pageId) {
-            // Get current page blocks from store
+          // If page is expanded and is the active page, show its blocks
+          if (node.type === 'file' && expandedIds.has(node.id) && node.pageId && node.pageId === this.builderStore.activePageId()) {
             const blocks = this.getPageBlocks(node.pageId);
             blocks.forEach(b => flat.push(b));
           }
@@ -273,14 +272,21 @@ export class FileTreeService {
     return flat;
   }
 
+  currentPageId(): string | null {
+    return this.builderStore.activePageId();
+  }
+
+  getBlockName(block: CanvasBlock): string {
+    return this.getBlockDisplayName(block);
+  }
+
   getPageBlocks(pageId: string): TreeNode[] {
-    // Only return blocks if this is the currently selected page in the editor
-    // If not, we might need to load them, but for now we assume they are in store
+    if (pageId !== this.builderStore.activePageId()) return [];
     const blocks = this.builderStore.blocks();
     
     return blocks.map((block, index) => ({
       id: 'block-' + block.id,
-      name: this.getBlockDisplayName(block),
+      name: this.getBlockName(block),
       type: 'block' as any,
       blockId: block.id,
       blockType: block.type,

@@ -27,9 +27,9 @@
   </div>
 
   <!-- Main Templates Scroll Area -->
-  <div class="template-scroll" cdkDropList id="templates-list" [cdkDropListConnectedTo]="['canvas-drop-list', 'canvas-drop-list-mobile']" [cdkDropListSortingDisabled]="true">
+  <div class="template-scroll" cdkDropList id="templates-list" [cdkDropListConnectedTo]="['canvas-drop-list']" [cdkDropListSortingDisabled]="true">
     
-    <!-- Recently Used Templates (Before Categories, only if has items) -->
+    <!-- Recently Used Templates -->
     <ng-container *ngIf="recentTemplates().length > 0 && searchQuery() === '' && selectedCategory() === 'all'">
       <div class="category-label">Recently Used</div>
       <div class="templates-grid">
@@ -38,22 +38,19 @@
           cdkDrag 
           [cdkDragData]="{ template, isTemplate: true }"
           (click)="addTemplate(template)"
-          (mouseenter)="hoveredId.set(template.id)"
-          (mouseleave)="hoveredId.set(null)"
+          (mouseenter)="hovered.set(template.id)"
+          (mouseleave)="hovered.set(null)"
           class="template-card">
           
           <div *cdkDragPreview class="drag-preview">
             <span class="preview-text">Add {{ template.name }}</span>
           </div>
 
-          <!-- REAL PREVIEW using scaled div -->
           <div class="template-preview-wrapper">
-            <div class="template-preview-scale">
-              <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)">
-              </div>
+            <div class="preview-scale">
+              <div [innerHTML]="getTemplatePreviewHTML(template)"></div>
             </div>
             
-            <!-- Favorite button preserved -->
             <button 
               class="heart-btn" 
               [class.fav]="isFav(template.id)" 
@@ -62,21 +59,17 @@
               <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
             </button>
 
-            <!-- Hover overlay -->
-            @if (hoveredId() === template.id) {
-              <div class="preview-overlay">
-                <button class="add-btn">
+            @if (hovered() === template.id) {
+              <div class="preview-hover-overlay">
+                <button class="add-template-btn">
                   + Add to Canvas
                 </button>
               </div>
             }
           </div>
           
-          <!-- Template info -->
           <div class="template-info">
-            <span class="template-name">
-              {{ template.name }}
-            </span>
+            <span class="template-name">{{ template.name }}</span>
             <span class="template-category" [style.background]="getCategoryColor(template.category)">
               {{ template.category }}
             </span>
@@ -85,7 +78,7 @@
       </div>
     </ng-container>
 
-    <!-- Grouped Categories View (when "All" is selected) -->
+    <!-- Grouped Categories View (All selected) -->
     <ng-container *ngIf="selectedCategory() === 'all'; else flatView">
       <div *ngFor="let group of groupedTemplates()" class="category-group">
         <div class="category-label flex items-center justify-between">
@@ -99,22 +92,19 @@
             cdkDrag 
             [cdkDragData]="{ template, isTemplate: true }"
             (click)="addTemplate(template)"
-            (mouseenter)="hoveredId.set(template.id)"
-            (mouseleave)="hoveredId.set(null)"
+            (mouseenter)="hovered.set(template.id)"
+            (mouseleave)="hovered.set(null)"
             class="template-card">
             
             <div *cdkDragPreview class="drag-preview">
               <span class="preview-text">Add {{ template.name }}</span>
             </div>
 
-            <!-- REAL PREVIEW using scaled div -->
             <div class="template-preview-wrapper">
-              <div class="template-preview-scale">
-                <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)">
-                </div>
+              <div class="preview-scale">
+                <div [innerHTML]="getTemplatePreviewHTML(template)"></div>
               </div>
               
-              <!-- Favorite button preserved -->
               <button 
                 class="heart-btn" 
                 [class.fav]="isFav(template.id)" 
@@ -123,21 +113,17 @@
                 <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
               </button>
 
-              <!-- Hover overlay -->
-              @if (hoveredId() === template.id) {
-                <div class="preview-overlay">
-                  <button class="add-btn">
+              @if (hovered() === template.id) {
+                <div class="preview-hover-overlay">
+                  <button class="add-template-btn">
                     + Add to Canvas
                   </button>
                 </div>
               }
             </div>
             
-            <!-- Template info -->
             <div class="template-info">
-              <span class="template-name">
-                {{ template.name }}
-              </span>
+              <span class="template-name">{{ template.name }}</span>
               <span class="template-category" [style.background]="getCategoryColor(template.category)">
                 {{ template.category }}
               </span>
@@ -155,22 +141,19 @@
           cdkDrag 
           [cdkDragData]="{ template, isTemplate: true }"
           (click)="addTemplate(template)"
-          (mouseenter)="hoveredId.set(template.id)"
-          (mouseleave)="hoveredId.set(null)"
+          (mouseenter)="hovered.set(template.id)"
+          (mouseleave)="hovered.set(null)"
           class="template-card">
           
           <div *cdkDragPreview class="drag-preview">
             <span class="preview-text">Add {{ template.name }}</span>
           </div>
 
-          <!-- REAL PREVIEW using scaled div -->
           <div class="template-preview-wrapper">
-            <div class="template-preview-scale">
-              <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)">
-              </div>
+            <div class="preview-scale">
+              <div [innerHTML]="getTemplatePreviewHTML(template)"></div>
             </div>
             
-            <!-- Favorite button preserved -->
             <button 
               class="heart-btn" 
               [class.fav]="isFav(template.id)" 
@@ -179,21 +162,17 @@
               <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
             </button>
 
-            <!-- Hover overlay -->
-            @if (hoveredId() === template.id) {
-              <div class="preview-overlay">
-                <button class="add-btn">
+            @if (hovered() === template.id) {
+              <div class="preview-hover-overlay">
+                <button class="add-template-btn">
                   + Add to Canvas
                 </button>
               </div>
             }
           </div>
           
-          <!-- Template info -->
           <div class="template-info">
-            <span class="template-name">
-              {{ template.name }}
-            </span>
+            <span class="template-name">{{ template.name }}</span>
             <span class="template-category" [style.background]="getCategoryColor(template.category)">
               {{ template.category }}
             </span>

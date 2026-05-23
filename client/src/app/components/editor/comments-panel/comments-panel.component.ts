@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
 import { CommentApiService, Comment } from '../../../services/comment-api.service';
-import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
 import { SocketService } from '../../../services/socket.service';
 

@@ -1,13 +1,13 @@
 const express = require('express');
 const pagesController = require('../controllers/pages.controller');
-const { protect } = require('../middleware/auth.middleware');
+// Auth middleware removed
 const { cache } = require('../middleware/cache.middleware');
 
 const router = express.Router();
 
 router.get('/public/:slug', pagesController.getPublicPageBySlug);
 
-router.use(protect);
+// protect middleware removed
 
 router.get('/', cache(30), pagesController.getAllPages);
 router.post('/', pagesController.createPage);

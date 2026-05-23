@@ -682,6 +682,16 @@ export class BuilderStore {
     this.queueAutoSave('custom-js-changed');
   }
 
+  isValidBlockType(type: string): boolean {
+    const validTypes = [
+      'text', 'heading', 'image', 'button',
+      'section', 'divider', 'spacer', 'video',
+      'columns', 'card', 'form', 'html',
+      'icon', 'map'
+    ];
+    return validTypes.includes(type);
+  }
+
   setPageTitleSilent(title: string): void {
     this.pageTitle.set(title || 'Untitled Page');
   }

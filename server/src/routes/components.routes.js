@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Component = require('../models/Component.model');
-const { protect } = require('../middleware/auth.middleware');
+// Auth middleware removed
 
-router.use(protect);
+// protect middleware removed
 
 router.get('/', async (req, res, next) => {
   try {
@@ -27,7 +27,7 @@ router.post('/', async (req, res, next) => {
       description: description || '',
       blocks,
       category: category || 'My Components',
-      userId: req.user._id
+      userId: '000000000000000000000001' // default user ID
     });
 
     res.status(201).json({ success: true, component });
