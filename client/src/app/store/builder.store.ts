@@ -181,17 +181,17 @@ export class BuilderStore {
   }
 
   addBlock(type: BlockType): void {
-    const newBlock = this.createBlock(type);
-    
-    const newBlocks = [...this.blocks(), newBlock];
-    this.saveHistory(newBlocks);
-    this.selectBlock(newBlock.id);
+    const block = this.createBlock(type);
+    this.blocks.update(b => [...b, block]);
+    this.selectedBlockId.set(block.id);
+    this.saveHistory(this.blocks());
     
     if (this.activePageId()) {
-      this.socketService.emitBlockAdded(this.activePageId()!, newBlock);
+      this.socketService.emitBlockAdded(this.activePageId()!, block);
     }
     
-    this.queueAutoSave('block-added');
+    queueMicrotask(() =>
+      this.autoSave?.triggerSave('added'));
   }
 
   addBlockAtIndex(type: BlockType, index: number): void {
@@ -449,16 +449,18 @@ export class BuilderStore {
     this.queueAutoSave('block-duplicated');
   }
 
-  reorderBlocks(previousIndex: number, currentIndex: number): void {
-    if (previousIndex === currentIndex) return;
-
-    const newBlocks = [...this.blocks()];
-    const [item] = newBlocks.splice(previousIndex, 1);
-    if (!item) return;
-
-    newBlocks.splice(currentIndex, 0, item);
-    this.saveHistory(newBlocks);
-    this.queueAutoSave('blocks-reordered');
+  reorderBlocks(prev: number, curr: number): void {
+    this.blocks.update(blocks => {
+      const arr = [...blocks];
+      const item = arr.splice(prev, 1)[0];
+      if (item) {
+        arr.splice(curr, 0, item);
+      }
+      return arr;
+    });
+    this.saveHistory(this.blocks());
+    queueMicrotask(() =>
+      this.autoSave?.triggerSave('reorder'));
   }
 
   undo(): void {
@@ -509,14 +511,17 @@ export class BuilderStore {
   addMultipleBlocks(blocks: CanvasBlock[], index?: number, reason = 'template-added'): string[] {
     if (blocks.length === 0) return [];
 
-    const newBlocks = [...this.blocks()];
-    if (typeof index === 'number' && index >= 0) {
-      newBlocks.splice(index, 0, ...blocks);
-    } else {
-      newBlocks.push(...blocks);
-    }
+    this.blocks.update(b => {
+      const arr = [...b];
+      if (typeof index === 'number' && index >= 0) {
+        arr.splice(index, 0, ...blocks);
+      } else {
+        arr.push(...blocks);
+      }
+      return arr;
+    });
 
-    this.saveHistory(newBlocks);
+    this.saveHistory(this.blocks());
     if (blocks.length > 0) {
       this.selectBlock(blocks[0].id);
     }
@@ -527,7 +532,8 @@ export class BuilderStore {
       });
     }
     
-    this.queueAutoSave(reason);
+    queueMicrotask(() =>
+      this.autoSave?.triggerSave('template'));
     return blocks.map(b => b.id);
   }
 

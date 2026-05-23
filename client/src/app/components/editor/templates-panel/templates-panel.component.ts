@@ -165,82 +165,38 @@ export class TemplatesPanelComponent implements OnInit {
 
   // Add template blocks to canvas
   addTemplate(template: SectionTemplate): void {
-    // Generate fresh unique IDs for ALL blocks
-    const timestamp = Date.now();
-    
-    const newBlocks = template.blocks.map(
-      (block, i) => this.cloneBlockWithNewId(
-        block, timestamp, i
+    const ts = Date.now();
+    const clone = (b: any, i: number): any => ({
+      ...b,
+      id: `${ts}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+      props: { ...b.props },
+      children: b.children?.map(
+        (c: any, ci: number) =>
+          clone(c, i * 100 + ci)
       )
-    );
-    
-    // Verify blocks have valid types
-    const validBlocks = newBlocks.filter(b => {
-      const valid = this.store.isValidBlockType(b.type);
-      if (!valid) {
-        console.warn('Skipping invalid block type:', b.type);
-      }
-      return valid;
     });
-    
-    if (validBlocks.length === 0) {
+
+    const blocks = template.blocks
+      .map((b, i) => clone(b, i))
+      .filter(b => this.store.isValidBlockType(b.type));
+
+    if (!blocks.length) {
       this.toast.show('Template has no valid blocks', 'error');
       return;
     }
-    
-    // Add all in ONE operation
-    this.store.addMultipleBlocks(validBlocks);
-    this.trackRecent(template.id);
-    
-    // Select first added block
-    setTimeout(() => {
-      this.store.selectBlock(validBlocks[0].id);
-      
-      // Scroll to first block
-      const el = document.getElementById('block-' + validBlocks[0].id);
-      el?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
-    }, 50);
-    
-    this.toast.show(
-      `✓ ${template.name} added — ${validBlocks.length} blocks`,
-      'success'
-    );
-  }
 
-  // Deep clone block with new ID
-  private cloneBlockWithNewId(
-    block: any, 
-    timestamp: number, 
-    index: number
-  ): CanvasBlock {
-    const newId = 
-      `${timestamp}-${index}-` +
-      Math.random().toString(36).slice(2, 7);
-    
-    const cloned = {
-      ...block,
-      id: newId,
-      animation: block.animation 
-        ? { ...block.animation } 
-        : undefined,
-      props: { ...block.props },
-    };
-    
-    // Clone children recursively
-    if (block.children?.length) {
-      cloned.children = block.children.map(
-        (child: any, ci: number) => 
-          this.cloneBlockWithNewId(
-            child, timestamp, 
-            index * 100 + ci
-          )
-      );
-    }
-    
-    return cloned;
+    this.store.addMultipleBlocks(blocks);
+    this.store.selectBlock(blocks[0].id);
+    this.trackRecent(template.id);
+
+    setTimeout(() => {
+      document.getElementById('block-' + blocks[0].id)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 100);
+
+    this.toast.show(`✓ ${template.name} added`, 'success');
   }
 
   // Clear search bar

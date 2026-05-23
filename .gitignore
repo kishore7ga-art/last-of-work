@@ -1,25 +1,13 @@
-# Dependencies
 node_modules/
 client/node_modules/
 server/node_modules/
-
-# Build output
 client/dist/
 client/.angular/
-mongodb_data/
-
-# Environment files
 .env
-.env.local
-.env.production
 server/.env
-
-# Logs
 *.log
-npm-debug.log*
-
-# OS files
 .DS_Store
-Thumbs.db
-
-.vercel
+coverage/
+.vscode/settings.json
+mongodb_data/
+.vercel/

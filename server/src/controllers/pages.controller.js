@@ -3,6 +3,12 @@ const { apiCache } = require('../middleware/cache.middleware');
 
 const DEFAULT_USER_ID = '000000000000000000000001';
 
+const generateSlug = (title) =>
+  title.toLowerCase()
+    .replace(/[^a-z0-9 -]/g, '')
+    .replace(/\s+/g, '-')
+    .trim() + '-' + Date.now()
+
 const createVersion = (page, label) => ({
   _id: new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 8),
   pageId: page._id.toString(),
@@ -33,167 +39,108 @@ const mapLegacySeo = (body, updates) => {
 exports.getAllPages = async (req, res, next) => {
   try {
     const pages = await Page.find()
-      .select('title slug published updatedAt thumbnail viewCount description workspaceId')
+      .select('title slug published updatedAt thumbnail viewCount')
       .sort({ updatedAt: -1 })
       .limit(100)
       .lean();
-
-    res.status(200).json({ success: true, count: pages.length, pages });
-  } catch (error) {
-    next(error);
-  }
+    res.json({ success: true, pages });
+  } catch(e) { next(e) }
 };
 
 exports.getPage = async (req, res, next) => {
   try {
-    const page = await Page.findById(req.params.id).lean();
-
-    if (!page) {
-      return res.status(404).json({ success: false, message: 'Page not found' });
-    }
-
-    res.status(200).json({ success: true, page });
-  } catch (error) {
-    next(error);
-  }
+    const page = await Page
+      .findById(req.params.id).lean();
+    if (!page) return res.status(404)
+      .json({ success: false, message: 'Page not found' });
+    res.json({ success: true, page });
+  } catch(e) { next(e) }
 };
 
 exports.createPage = async (req, res, next) => {
   try {
     const { title, description } = req.body;
-    const slug = Page.generateSlug(title || 'untitled');
-
     const page = await Page.create({
-      ...req.body,
       title: title || 'Untitled Page',
+      slug: generateSlug(title || 'untitled'),
       description: description || '',
-      userId: DEFAULT_USER_ID,
-      slug
+      blocks: [],
+      userId: DEFAULT_USER_ID
     });
-
     if (apiCache) {
       apiCache.flushAll();
     }
-
     res.status(201).json({ success: true, page });
-  } catch (error) {
-    next(error);
-  }
+  } catch(e) { next(e) }
 };
 
 exports.updatePage = async (req, res, next) => {
   try {
-    const existingPage = await Page.findById(req.params.id).lean();
-
-    if (!existingPage) {
-      return res.status(404).json({ success: false, message: 'Page not found' });
-    }
-
-    const allowedUpdates = {
-      title:        req.body.title,
-      description:  req.body.description,
-      blocks:       req.body.blocks,
-      thumbnail:    req.body.thumbnail,
-      themeId:      req.body.themeId,
-      customTheme:  req.body.customTheme,
-      seo:          req.body.seo,
-      settings:     req.body.settings,
-      globalStyles: req.body.globalStyles,
-      canonicalUrl: req.body.canonicalUrl,
-      customDomain: req.body.customDomain,
-    };
-
-    // Remove undefined fields
-    Object.keys(allowedUpdates).forEach(key => {
-      if (allowedUpdates[key] === undefined) {
-        delete allowedUpdates[key];
-      }
+    const allowed = {};
+    const fields = ['title', 'blocks', 'seo', 'settings', 'thumbnail', 'published'];
+    fields.forEach(f => {
+      if (req.body[f] !== undefined)
+        allowed[f] = req.body[f];
     });
+    allowed.updatedAt = new Date();
 
-    // Smart merge settings
-    if (allowedUpdates.settings && existingPage.settings) {
-      allowedUpdates.settings = { ...existingPage.settings, ...allowedUpdates.settings };
-    }
-
-    mapLegacySeo(req.body, allowedUpdates);
-
-    if (req.body.blocks !== undefined) {
-      allowedUpdates.versions = [createVersion(existingPage), ...(existingPage.versions || [])].slice(0, 20);
-    }
-
-    const page = await Page.findByIdAndUpdate(
-      req.params.id,
-      { $set: {
-        ...allowedUpdates,
-        updatedAt: new Date()
-      }},
-      { new: true, lean: true }
-    );
-
+    const page = await Page
+      .findByIdAndUpdate(
+        req.params.id,
+        { $set: allowed },
+        { new: true, lean: true }
+      );
+    if (!page) return res.status(404)
+      .json({ success: false, message: 'Page not found' });
     if (apiCache) {
       apiCache.flushAll();
     }
-
-    res.status(200).json({ success: true, page });
-  } catch (error) {
-    next(error);
-  }
+    res.json({ success: true, page });
+  } catch(e) { next(e) }
 };
 
 exports.deletePage = async (req, res, next) => {
   try {
     const page = await Page.findByIdAndDelete(req.params.id);
-
-    if (!page) {
-      return res.status(404).json({ success: false, message: 'Page not found' });
-    }
-
+    if (!page) return res.status(404)
+      .json({ success: false, message: 'Page not found' });
     if (apiCache) {
       apiCache.flushAll();
     }
-
-    res.status(200).json({ success: true, message: 'Page deleted successfully' });
-  } catch (error) {
-    next(error);
-  }
+    res.json({ success: true, message: 'Deleted' });
+  } catch(e) { next(e) }
 };
 
 exports.publishPage = async (req, res, next) => {
   try {
-    const page = await Page.findById(req.params.id);
-
-    if (!page) {
-      return res.status(404).json({ success: false, message: 'Page not found' });
-    }
-
+    const page = await Page
+      .findById(req.params.id);
+    if (!page) return res.status(404)
+      .json({ success: false, message: 'Page not found' });
     page.published = !page.published;
-    page.publishedAt = page.published ? Date.now() : undefined;
+    if (page.published)
+      page.publishedAt = new Date();
     await page.save();
-
     if (apiCache) {
       apiCache.flushAll();
     }
-
-    res.status(200).json({ success: true, published: page.published, page });
-  } catch (error) {
-    next(error);
-  }
+    res.json({ success: true, published: page.published, page });
+  } catch(e) { next(e) }
 };
 
 exports.duplicatePage = async (req, res, next) => {
   try {
     const original = await Page.findById(req.params.id).lean().exec();
-
     if (!original) {
       return res.status(404).json({ success: false, message: 'Page not found' });
     }
 
     const page = await Page.create({
       title: `${original.title} (Copy)`,
-      slug: Page.generateSlug(`${original.title} copy`),
-      description: original.description,
-      blocks: original.blocks,
-      thumbnail: original.thumbnail,
+      slug: generateSlug(original.title || 'untitled'),
+      description: original.description || '',
+      blocks: original.blocks || [],
+      thumbnail: original.thumbnail || '',
       userId: DEFAULT_USER_ID,
       seo: original.seo,
       settings: original.settings,
@@ -209,7 +156,6 @@ exports.duplicatePage = async (req, res, next) => {
     if (apiCache) {
       apiCache.flushAll();
     }
-
     res.status(201).json({ success: true, page });
   } catch (error) {
     next(error);
@@ -219,11 +165,9 @@ exports.duplicatePage = async (req, res, next) => {
 exports.getPageVersions = async (req, res, next) => {
   try {
     const page = await Page.findById(req.params.id).select('versions').lean();
-
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found' });
     }
-
     res.status(200).json({ success: true, versions: page.versions || [] });
   } catch (error) {
     next(error);
@@ -233,7 +177,6 @@ exports.getPageVersions = async (req, res, next) => {
 exports.restorePageVersion = async (req, res, next) => {
   try {
     const page = await Page.findById(req.params.id);
-
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found' });
     }
@@ -250,7 +193,6 @@ exports.restorePageVersion = async (req, res, next) => {
     if (apiCache) {
       apiCache.flushAll();
     }
-
     res.status(200).json({ success: true, page });
   } catch (error) {
     next(error);
@@ -261,11 +203,9 @@ exports.generateContent = async (req, res, next) => {
   try {
     const { prompt, context } = req.body;
     const cleanPrompt = String(prompt || '').trim();
-
     if (!cleanPrompt) {
       return res.status(400).json({ success: false, message: 'Prompt is required' });
     }
-
     const fallback = `Here is polished page copy for: ${cleanPrompt}${context ? `\n\nContext: ${context}` : ''}`;
     res.status(200).json({ success: true, content: fallback });
   } catch (error) {
@@ -276,14 +216,11 @@ exports.generateContent = async (req, res, next) => {
 exports.getPublicPageBySlug = async (req, res, next) => {
   try {
     const page = await Page.findOne({ slug: req.params.slug, published: true });
-
     if (!page) {
       return res.status(404).json({ success: false, message: 'Page not found or not published' });
     }
-
-    page.viewCount += 1;
+    page.viewCount = (page.viewCount || 0) + 1;
     await page.save();
-
     res.status(200).json({ success: true, page });
   } catch (error) {
     next(error);

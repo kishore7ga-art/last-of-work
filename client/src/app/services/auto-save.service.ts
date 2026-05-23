@@ -190,25 +190,22 @@ export class AutoSaveService {
   private async _executeSave(): Promise<void> {
     const pageId = this.currentPageId();
     if (!pageId) return;
-    // Nothing dirty? Skip silently.
-    if (!this.dirty.blocks && !this.dirty.title && !this.dirty.seo) {
-      this.hasUnsavedChanges.set(false);
-      this.saveStatus.set('idle');
-      return;
-    }
 
-    this.saveStatus.set('saving');
+    this.saveStatus.set('saving');  // ← SHOW SPINNER
     this.saveError.set(null);
 
-    // Snapshot dirty flags and reset BEFORE the async call
     const snapshot = { ...this.dirty };
     this.dirty = { blocks: false, title: false, seo: false };
 
     try {
       const payload = this._buildPayload(snapshot);
-      const updatedPage = await firstValueFrom(this.pageApi.updatePage(pageId, payload));
-
-      this.saveStatus.set('saved');
+      const updatedPage = await firstValueFrom(
+        this.pageApi.updatePage(
+          pageId,
+          payload
+        )
+      );
+      this.saveStatus.set('saved');  // ← SHOW CHECK
       this.lastSavedAt.set(new Date(updatedPage?.updatedAt ?? new Date()));
       this.hasUnsavedChanges.set(false);
       this.pendingSave.set(false);
@@ -221,21 +218,18 @@ export class AutoSaveService {
       }, ...log].slice(0, 20));
 
       setTimeout(() => {
-        if (this.saveStatus() === 'saved') this.saveStatus.set('idle');
-      }, 2500);
-
-    } catch (err: any) {
+        if (this.saveStatus() === 'saved')
+          this.saveStatus.set('idle');
+      }, 3000);
+    } catch(e: any) {
       // Restore dirty flags so the next retry sends everything
       this.dirty.blocks = this.dirty.blocks || snapshot.blocks;
       this.dirty.title  = this.dirty.title  || snapshot.title;
       this.dirty.seo    = this.dirty.seo    || snapshot.seo;
 
-      this.saveStatus.set('error');
-      this.saveError.set(err?.message || 'Save failed. Retrying…');
+      this.saveStatus.set('error');  // ← SHOW ERROR
+      this.saveError.set(e?.message || 'Save failed. Retrying…');
 
-      if (!environment.production) console.error('[AutoSave] error:', err);
-
-      // Retry after 5 s
       this.ngZone.runOutsideAngular(() => {
         setTimeout(() => this.ngZone.run(() => this._executeSave()), 5000);
       });

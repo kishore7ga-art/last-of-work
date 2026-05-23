@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, retry } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface PageSeo {
@@ -53,7 +53,11 @@ export class PageApiService {
       .get<any>(`${this.api}/pages`)
       .pipe(
         map(r => r.pages || []),
-        catchError(() => of([]))
+        retry(2),
+        catchError(err => {
+          console.error('getPages:', err)
+          return of([])
+        })
       );
   }
 
