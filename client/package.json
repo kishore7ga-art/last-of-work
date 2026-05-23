@@ -4,10 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "node scripts/write-env.js && ng build --configuration production",
-    "build:stats": "ng build --stats-json",
-    "build:vercel": "node scripts/write-env.js && ng build --configuration production",
-    "watch": "ng build --watch --configuration development",
+    "build": "node scripts/write-env.js && npx ng build --configuration production",
+    "build:stats": "npx ng build --stats-json",
+    "build:vercel": "node scripts/write-env.js && npx ng build --configuration production",
+    "watch": "npx ng build --watch --configuration development",
     "test": "ng test"
   },
   "private": true,
