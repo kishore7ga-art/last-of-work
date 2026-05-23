@@ -47,21 +47,41 @@ app.get('/api/health', async (req, res) => {
 })
 
 // API Routes — NO auth middleware
-const loadRoute = (routePath, filePath) => {
-  try {
-    app.use(routePath, require(filePath))
-    console.log(`✅ Route: ${routePath}`)
-  } catch(e) {
-    console.warn(`⚠️ Skipped ${routePath}:`,
-      e.message)
-  }
+try {
+  app.use('/api/pages', require('./routes/pages.routes'))
+  console.log('✅ Route: /api/pages')
+} catch (e) {
+  console.warn('⚠️ Skipped /api/pages:', e.message)
 }
 
-loadRoute('/api/pages', './routes/pages.routes')
-loadRoute('/api/public', './routes/public.routes')
-loadRoute('/api/components', './routes/components.routes')
-loadRoute('/api/user', './routes/user.routes')
-loadRoute('/api/workspaces', './routes/workspace.routes')
+try {
+  app.use('/api/public', require('./routes/public.routes'))
+  console.log('✅ Route: /api/public')
+} catch (e) {
+  console.warn('⚠️ Skipped /api/public:', e.message)
+}
+
+try {
+  app.use('/api/components', require('./routes/components.routes'))
+  console.log('✅ Route: /api/components')
+} catch (e) {
+  console.warn('⚠️ Skipped /api/components:', e.message)
+}
+
+try {
+  app.use('/api/user', require('./routes/user.routes'))
+  console.log('✅ Route: /api/user')
+} catch (e) {
+  console.warn('⚠️ Skipped /api/user:', e.message)
+}
+
+try {
+  app.use('/api/workspaces', require('./routes/workspace.routes'))
+  console.log('✅ Route: /api/workspaces')
+} catch (e) {
+  console.warn('⚠️ Skipped /api/workspaces:', e.message)
+}
+
 
 // Serve Angular for all non-API routes
 app.get('*', (req, res) => {
