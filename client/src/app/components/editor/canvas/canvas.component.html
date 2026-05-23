@@ -1,135 +1,171 @@
 <div class="canvas-area"
+  [class.mobile-mode]="isMobileView()"
+  [class.tablet-mode]="store.previewMode() === 'tablet'"
   (click)="store.clearSelection()">
+  
+  <!-- CANVAS INFO BAR -->
+  <div class="canvas-info-bar">
+    <span class="device-label">
+      @if (isMobileView()) { 📱 Mobile • 390px }
+      @else if (store.previewMode() === 'tablet') { ⬜ Tablet • 768px }
+      @else { 🖥 Desktop • 1200px }
+    </span>
+    @if (store.editMode() === 'mobile') {
+      <span class="edit-mode-badge mobile">
+        ● Editing Mobile
+      </span>
+    }
+  </div>
 
+  <!-- PHONE FRAME (mobile only) -->
   @if (isMobileView()) {
-    <!-- PHONE PREVIEW MODE -->
     <div class="phone-frame-wrapper">
       <div class="phone-frame">
-        <div class="phone-notch-bar">
+        
+        <!-- Phone top notch -->
+        <div class="phone-top">
           <div class="phone-notch"></div>
         </div>
-        <div class="phone-screen"
-          id="canvas-drop-list"
-          cdkDropList
-          [cdkDropListData]="store.blocks()"
-          [cdkDropListConnectedTo]="['sidebar-list']"
-          (cdkDropListDropped)="onBlockDrop($event)">
-          
-          @if (store.blocks().length === 0) {
-            <div class="canvas-empty"
-              cdkDropList
-              (cdkDropListDropped)="onSidebarDrop($event)">
-              <lucide-icon name="MousePointerClick" [size]="40"></lucide-icon>
-              <p>Click blocks or drag here</p>
-            </div>
-          }
-
-          @for (block of store.blocks(); track trackBlock($index, block)) {
-            @if (block.visibility?.mobile !== false) {
-              <div [id]="'block-' + block.id" class="mobile-block block-drag-item">
-                <app-block-wrapper
-                  [block]="block"
-                  [mbAnimate]="block.animation">
-                  
-                  <span cdkDragHandle class="drag-handle">⠿</span>
-
-                  @if (block.type === 'section') {
-                    <app-section-block
-                      [props]="getMobileProps(block).props"
-                      [blockId]="block.id"
-                      [isEditing]="true">
-                      @if (block.children && block.children.length > 0) {
-                        @for (child of block.children; track child.id) {
-                          <div class="section-nested-child">
-                            <ng-container
-                              [ngComponentOutlet]="getComponent(child.type)"
-                              [ngComponentOutletInputs]="getMobileProps(child)">
-                            </ng-container>
-                          </div>
-                        }
-                      }
-                    </app-section-block>
-                  } @else {
-                    <ng-container
-                      [ngComponentOutlet]="getComponent(block.type)"
-                      [ngComponentOutletInputs]="getMobileProps(block)">
-                    </ng-container>
-                  }
-
-                </app-block-wrapper>
+        
+        <!-- Phone screen -->
+        <div class="phone-screen">
+          <div class="phone-content"
+            id="canvas-drop-list"
+            [cdkDropListData]="store.blocks()"
+            cdkDropList
+            [cdkDropListConnectedTo]="['sidebar-list']"
+            (cdkDropListDropped)="onBlockDrop($event)">
+            
+            @if (store.blocks().length === 0) {
+              <div class="mobile-empty"
+                cdkDropList
+                (cdkDropListDropped)="onSidebarDrop($event)">
+                <p>Add blocks to see mobile view</p>
               </div>
             }
-          }
+            
+            @for (block of store.blocks(); track block.id; let i = $index) {
+              
+              @if (block.visibility?.mobile !== false) {
+                <div cdkDrag
+                  [cdkDragData]="block"
+                  [id]="'block-' + block.id"
+                  class="mobile-block">
+                  
+                  <app-block-wrapper
+                    [block]="block"
+                    [mbAnimate]="block.animation"
+                    [isMobile]="true">
+                    
+                    @if (block.type === 'section') {
+                      <app-section-block
+                        [props]="getMobileProps(block).props"
+                        [blockId]="block.id"
+                        [isEditing]="true">
+                        @if (block.children && block.children.length > 0) {
+                          @for (child of block.children; track child.id) {
+                            <div class="section-nested-child">
+                              <ng-container
+                                [ngComponentOutlet]="getComponent(child.type)"
+                                [ngComponentOutletInputs]="getMobileProps(child)">
+                              </ng-container>
+                            </div>
+                          }
+                        }
+                      </app-section-block>
+                    } @else {
+                      <ng-container
+                        [ngComponentOutlet]="getComponent(block.type)"
+                        [ngComponentOutletInputs]="getMobileProps(block)">
+                      </ng-container>
+                    }
+                  </app-block-wrapper>
+                  
+                </div>
+              } @else {
+                <!-- Hidden on mobile indicator -->
+                <div class="hidden-mobile-indicator">
+                  <span>👁 Hidden on mobile</span>
+                </div>
+              }
+            }
+          </div>
         </div>
+        
+        <!-- Phone bottom -->
         <div class="phone-bottom">
-          <div class="phone-home"></div>
+          <div class="phone-home-bar"></div>
         </div>
+        
       </div>
     </div>
+    
   } @else {
-    <!-- DESKTOP / TABLET PREVIEW MODE -->
-    <div class="canvas-page"
-      [style.width.px]="canvasWidth()"
-      id="canvas-drop-list"
-      cdkDropList
-      [cdkDropListData]="store.blocks()"
-      [cdkDropListConnectedTo]="['sidebar-list']"
-      (cdkDropListDropped)="onBlockDrop($event)"
-      (click)="$event.stopPropagation()">
-
-      @if (store.blocks().length === 0) {
-        <div class="canvas-empty"
-          cdkDropList
-          (cdkDropListDropped)="onSidebarDrop($event)">
-          <lucide-icon name="MousePointerClick" [size]="40"></lucide-icon>
-          <p>Click blocks or drag here</p>
-        </div>
-      }
-
-      @for (block of store.blocks(); track trackBlock($index, block)) {
-        <div cdkDrag
-          [cdkDragData]="block"
-          [id]="'block-' + block.id"
-          class="block-drag-item">
-
-          <div *cdkDragPreview class="cdk-preview-custom">
-            {{ block.type | titlecase }}
+    <!-- DESKTOP/TABLET CANVAS -->
+    <div class="canvas-page-wrapper">
+      <div class="canvas-page"
+        [style.width.px]="canvasWidth()"
+        id="canvas-drop-list"
+        cdkDropList
+        [cdkDropListData]="store.blocks()"
+        [cdkDropListConnectedTo]="['sidebar-list']"
+        (cdkDropListDropped)="onBlockDrop($event)"
+        (click)="$event.stopPropagation()">
+        
+        @if (store.blocks().length === 0) {
+          <div class="canvas-empty"
+            cdkDropList
+            (cdkDropListDropped)="onSidebarDrop($event)">
+            <lucide-icon name="MousePointerClick" [size]="40" class="empty-icon"></lucide-icon>
+            <p>Click blocks or drag templates here</p>
           </div>
-
-          <div *cdkDragPlaceholder class="cdk-placeholder-custom"></div>
-
-          <app-block-wrapper
-            [block]="block"
-            [mbAnimate]="block.animation">
-
-            <span cdkDragHandle class="drag-handle">⠿</span>
-
-            @if (block.type === 'section') {
-              <app-section-block
-                [props]="store.getActiveProps(block)"
-                [blockId]="block.id"
-                [isEditing]="true">
-                @if (block.children && block.children.length > 0) {
-                  @for (child of block.children; track child.id) {
-                    <div class="section-nested-child">
-                      <ng-container
-                        [ngComponentOutlet]="getComponent(child.type)"
-                        [ngComponentOutletInputs]="getComponentInputs(child)">
-                      </ng-container>
-                    </div>
+        }
+        
+        @for (block of store.blocks(); track block.id; let i = $index) {
+          <div cdkDrag
+            [cdkDragData]="block"
+            [id]="'block-' + block.id"
+            class="block-drag-item">
+            
+            <div *cdkDragPreview class="drag-preview">
+              {{ block.type | titlecase }}
+            </div>
+            
+            <div *cdkDragPlaceholder class="drop-placeholder"></div>
+            
+            <app-block-wrapper
+              [block]="block"
+              [mbAnimate]="block.animation">
+              
+              <span cdkDragHandle class="drag-handle">⠿</span>
+              
+              @if (block.type === 'section') {
+                <app-section-block
+                  [props]="store.getActiveProps(block)"
+                  [blockId]="block.id"
+                  [isEditing]="true">
+                  @if (block.children && block.children.length > 0) {
+                    @for (child of block.children; track child.id) {
+                      <div class="section-nested-child">
+                        <ng-container
+                          [ngComponentOutlet]="getComponent(child.type)"
+                          [ngComponentOutletInputs]="getComponentInputs(child)">
+                        </ng-container>
+                      </div>
+                    }
                   }
-                }
-              </app-section-block>
-            } @else {
-              <ng-container
-                [ngComponentOutlet]="getComponent(block.type)"
-                [ngComponentOutletInputs]="getComponentInputs(block)">
-              </ng-container>
-            }
-
-          </app-block-wrapper>
-        </div>
-      }
+                </app-section-block>
+              } @else {
+                <ng-container
+                  [ngComponentOutlet]="getComponent(block.type)"
+                  [ngComponentOutletInputs]="getComponentInputs(block)">
+                </ng-container>
+              }
+              
+            </app-block-wrapper>
+          </div>
+        }
+      </div>
     </div>
   }
 </div>

@@ -38,8 +38,8 @@
           cdkDrag 
           [cdkDragData]="{ template, isTemplate: true }"
           (click)="addTemplate(template)"
-          (mouseenter)="hovered.set(template.id)"
-          (mouseleave)="hovered.set(null)"
+          (mouseenter)="hoveredId.set(template.id)"
+          (mouseleave)="hoveredId.set(null)"
           class="template-card">
           
           <div *cdkDragPreview class="drag-preview">
@@ -47,8 +47,8 @@
           </div>
 
           <div class="template-preview-wrapper">
-            <div class="preview-scale">
-              <div [innerHTML]="getTemplatePreviewHTML(template)"></div>
+            <div class="template-preview-scale">
+              <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)"></div>
             </div>
             
             <button 
@@ -59,9 +59,9 @@
               <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
             </button>
 
-            @if (hovered() === template.id) {
-              <div class="preview-hover-overlay">
-                <button class="add-template-btn">
+            @if (hoveredId() === template.id) {
+              <div class="preview-overlay">
+                <button class="add-btn">
                   + Add to Canvas
                 </button>
               </div>
@@ -92,8 +92,8 @@
             cdkDrag 
             [cdkDragData]="{ template, isTemplate: true }"
             (click)="addTemplate(template)"
-            (mouseenter)="hovered.set(template.id)"
-            (mouseleave)="hovered.set(null)"
+            (mouseenter)="hoveredId.set(template.id)"
+            (mouseleave)="hoveredId.set(null)"
             class="template-card">
             
             <div *cdkDragPreview class="drag-preview">
@@ -101,8 +101,8 @@
             </div>
 
             <div class="template-preview-wrapper">
-              <div class="preview-scale">
-                <div [innerHTML]="getTemplatePreviewHTML(template)"></div>
+              <div class="template-preview-scale">
+                <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)"></div>
               </div>
               
               <button 
@@ -113,9 +113,9 @@
                 <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
               </button>
 
-              @if (hovered() === template.id) {
-                <div class="preview-hover-overlay">
-                  <button class="add-template-btn">
+              @if (hoveredId() === template.id) {
+                <div class="preview-overlay">
+                  <button class="add-btn">
                     + Add to Canvas
                   </button>
                 </div>
@@ -141,8 +141,8 @@
           cdkDrag 
           [cdkDragData]="{ template, isTemplate: true }"
           (click)="addTemplate(template)"
-          (mouseenter)="hovered.set(template.id)"
-          (mouseleave)="hovered.set(null)"
+          (mouseenter)="hoveredId.set(template.id)"
+          (mouseleave)="hoveredId.set(null)"
           class="template-card">
           
           <div *cdkDragPreview class="drag-preview">
@@ -150,8 +150,8 @@
           </div>
 
           <div class="template-preview-wrapper">
-            <div class="preview-scale">
-              <div [innerHTML]="getTemplatePreviewHTML(template)"></div>
+            <div class="template-preview-scale">
+              <div class="template-preview-content" [innerHTML]="getTemplateHTML(template)"></div>
             </div>
             
             <button 
@@ -162,9 +162,9 @@
               <lucide-icon name="heart" [size]="14" [class.filled]="isFav(template.id)"></lucide-icon>
             </button>
 
-            @if (hovered() === template.id) {
-              <div class="preview-hover-overlay">
-                <button class="add-template-btn">
+            @if (hoveredId() === template.id) {
+              <div class="preview-overlay">
+                <button class="add-btn">
                   + Add to Canvas
                 </button>
               </div>

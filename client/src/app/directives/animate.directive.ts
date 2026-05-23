@@ -5,119 +5,86 @@ import { BlockAnimation } from '../models/animation.models';
   selector: '[mbAnimate]',
   standalone: true
 })
-export class AnimateDirective
+export class AnimateDirective 
   implements OnInit, OnChanges, OnDestroy {
 
-  @Input('mbAnimate') animation?: BlockAnimation
+  @Input('mbAnimate') 
+  animation?: BlockAnimation
+  
   @Input() mbPreview = false
 
   private el = inject(ElementRef)
   private observer: IntersectionObserver | null = null
-  private twTimer: any = null
-  private hasPlayed = false
+  private twTimer: ReturnType<typeof setTimeout> | null 
+    = null
   private originalText = ''
-
-  private readonly DEFAULTS: Record<string, {
-    dur: number, ease: string
-  }> = {
-    fadeIn:        {dur:800, ease:'ease-out'},
-    fadeInUp:      {dur:700, ease:'ease-out'},
-    fadeInDown:    {dur:700, ease:'ease-out'},
-    fadeInLeft:    {dur:650, ease:'ease-out'},
-    fadeInRight:   {dur:650, ease:'ease-out'},
-    slideUp:       {dur:500, ease:
-      'cubic-bezier(0.25,0.46,0.45,0.94)'},
-    slideDown:     {dur:500, ease:
-      'cubic-bezier(0.25,0.46,0.45,0.94)'},
-    slideLeft:     {dur:450, ease:
-      'cubic-bezier(0.25,0.46,0.45,0.94)'},
-    slideRight:    {dur:450, ease:
-      'cubic-bezier(0.25,0.46,0.45,0.94)'},
-    zoomIn:        {dur:600, ease:
-      'cubic-bezier(0.175,0.885,0.32,1.275)'},
-    zoomOut:       {dur:700, ease:'ease-out'},
-    zoomInUp:      {dur:650, ease:
-      'cubic-bezier(0.175,0.885,0.32,1.275)'},
-    bounceIn:      {dur:800, ease:'linear'},
-    bounceInUp:    {dur:900, ease:'linear'},
-    bounceInDown:  {dur:900, ease:'linear'},
-    bounceInLeft:  {dur:850, ease:'linear'},
-    bounceInRight: {dur:850, ease:'linear'},
-    pulse:         {dur:1000,ease:'ease-in-out'},
-    bounce:        {dur:1200,ease:'linear'},
-    flipInX:       {dur:1000,ease:'linear'},
-    flipInY:       {dur:1000,ease:'linear'},
-    rotateIn:      {dur:900, ease:
-      'cubic-bezier(0.175,0.885,0.32,1.275)'},
-    shake:         {dur:600, ease:'ease-in-out'},
-    wobble:        {dur:1000,ease:'ease-in-out'},
-    wiggle:        {dur:800, ease:'ease-in-out'},
-    jello:         {dur:900, ease:'linear'},
-    heartBeat:     {dur:1300,ease:'ease-in-out'},
-    flash:         {dur:1000,ease:'ease-in-out'},
-    rubberBand:    {dur:1000,ease:'linear'},
-    blurIn:        {dur:900, ease:'ease-out'},
-    glitch:        {dur:800, ease:'steps(1)'},
-  }
+  private hasPlayed = false
 
   ngOnInit(): void {
-    setTimeout(() => this.init(), 150)
+    // Small delay to ensure DOM is ready
+    setTimeout(() => this.init(), 100)
   }
 
-  ngOnChanges(c: SimpleChanges): void {
-    if (c['mbPreview']?.currentValue === true) {
-      setTimeout(() => this.play(), 50)
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['mbPreview'] && 
+        changes['mbPreview'].currentValue === true) {
+      this.cleanup()
+      setTimeout(() => this.playNow(), 50)
     }
-    if (c['animation'] && !c['animation']
+    if (changes['animation'] && !changes['animation']
         .firstChange) {
       this.cleanup()
-      setTimeout(() => this.init(), 150)
+      setTimeout(() => this.init(), 100)
     }
   }
 
   private init(): void {
     const anim = this.animation
     const el = this.el.nativeElement as HTMLElement
-
+    
     if (!anim?.enabled || anim.type === 'none') {
       el.style.opacity = '1'
       el.style.animation = ''
+      el.classList.remove('mb-anim-ready')
       return
     }
 
     if (this.mbPreview) {
-      this.play()
+      this.playNow()
       return
     }
 
+    // Set initial hidden state
     el.style.opacity = '0'
     el.style.willChange = 'transform, opacity'
 
+    // Create observer
     this.observer = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting && !this.hasPlayed) {
-          this.play()
-          if (anim.triggerOnce ?? true) {
-            this.observer?.unobserve(el)
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            this.playNow()
+            if (anim.triggerOnce ?? true) {
+              this.observer?.unobserve(el)
+            }
+          } else if (!(anim.triggerOnce ?? true) && 
+                     this.hasPlayed) {
+            this.reset()
           }
-        } else if (
-          !e.isIntersecting &&
-          !(anim.triggerOnce ?? true) &&
-          this.hasPlayed) {
-          this.reset()
-        }
-      }),
+        })
+      },
       {
         threshold: anim.threshold ?? 0.1,
         rootMargin: '0px 0px -50px 0px'
       }
     )
+
     this.observer.observe(el)
   }
 
-  private play(): void {
+  private playNow(): void {
     const anim = this.animation
-    if (!anim) return
+    if (!anim) return;
     const el = this.el.nativeElement as HTMLElement
     this.hasPlayed = true
 
@@ -126,32 +93,78 @@ export class AnimateDirective
       return
     }
 
-    const def = this.DEFAULTS[anim.type]
-      || { dur: 600, ease: 'ease-out' }
+    // Get natural defaults
+    const defaults = NATURAL_DEFAULTS[anim.type] 
+      || { duration: 600, easing: 'ease-out' }
+    
+    const duration = anim.duration ?? defaults.duration
+    const easing = anim.easing === 'ease-out' 
+      ? defaults.easing 
+      : (anim.easing ?? defaults.easing)
 
-    const dur = anim.duration ?? def.dur
-    const ease = anim.easing === 'ease-out'
-      ? def.ease : (anim.easing ?? def.ease)
     const delay = anim.delay ?? 0
-    const iter =
-      anim.repeat === 'once' ? '1' :
-      anim.repeat === 'loop' ? 'infinite' :
-      String(anim.repeat ?? 1)
+    const repeat = anim.repeat ?? 'once'
+    const direction = anim.direction ?? 'normal'
 
+    const iterCount = 
+      repeat === 'once' ? '1' :
+      repeat === 'loop' ? 'infinite' :
+      String(repeat)
+
+    // Force reset then play
     el.style.animation = 'none'
     el.style.opacity = '0'
-
+    
+    // Use requestAnimationFrame for reliability
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         el.style.opacity = ''
         el.style.animation = [
           `mb-${anim.type}`,
-          `${dur}ms`, ease,
-          `${delay}ms`, iter,
-          anim.direction ?? 'normal',
+          `${duration}ms`,
+          easing,
+          `${delay}ms`,
+          iterCount,
+          direction,
           'both'
         ].join(' ')
+        
+        // Stagger children if section
+        if ((anim.stagger ?? false) && 
+            el.children.length > 0) {
+          this.applyStagger(el, anim)
+        }
       })
+    })
+  }
+
+  private applyStagger(
+    parent: HTMLElement,
+    anim: BlockAnimation): void {
+    
+    const children = Array.from(
+      parent.children) as HTMLElement[]
+    const staggerMs = anim.staggerMs ?? 120
+    const defaults = NATURAL_DEFAULTS[anim.type]
+      || { duration: 600, easing: 'ease-out' }
+    
+    children.forEach((child, i) => {
+      const childHtml = child as HTMLElement;
+      childHtml.style.opacity = '0'
+      childHtml.style.animation = 'none'
+      
+      setTimeout(() => {
+        childHtml.style.animation = [
+          `mb-${anim.type}`,
+          `${anim.duration ?? defaults.duration}ms`,
+          anim.easing ?? defaults.easing,
+          '0ms',
+          '1',
+          'normal',
+          'both'
+        ].join(' ')
+        childHtml.style.opacity = ''
+      }, i * staggerMs + (anim.delay ?? 0))
     })
   }
 
@@ -165,39 +178,47 @@ export class AnimateDirective
   private runTypewriter(): void {
     const anim = this.animation!
     const el = this.el.nativeElement as HTMLElement
-    this.originalText = el.textContent?.trim()||''
+    
+    this.originalText = el.textContent?.trim() || ''
     el.style.opacity = '1'
     el.innerHTML = ''
-
+    
     const textSpan = document.createElement('span')
     el.appendChild(textSpan)
-
+    
     if (anim.twCursor ?? true) {
       const cursor = document.createElement('span')
       cursor.className = 'mb-tw-cursor'
       cursor.textContent = '|'
+      cursor.style.cssText = 
+        'animation:mb-cursor-blink 0.7s ' +
+        'step-end infinite;margin-left:1px;'
       el.appendChild(cursor)
     }
-
+    
     let i = 0
     const speed = anim.twSpeed ?? 60
+    const delay = anim.delay ?? 0
+    
     setTimeout(() => {
       const type = () => {
         if (i < this.originalText.length) {
-          textSpan.textContent +=
+          textSpan.textContent += 
             this.originalText[i++]
           this.twTimer = setTimeout(type, speed)
         }
       }
       type()
-    }, anim.delay ?? 0)
+    }, delay)
   }
 
   private cleanup(): void {
     this.observer?.disconnect()
     this.observer = null
     if (this.twTimer) clearTimeout(this.twTimer)
+    this.twTimer = null
     this.hasPlayed = false
+    
     const el = this.el.nativeElement as HTMLElement
     el.style.animation = ''
     el.style.opacity = ''
@@ -205,4 +226,41 @@ export class AnimateDirective
   }
 
   ngOnDestroy(): void { this.cleanup() }
+}
+
+// Natural defaults constant (outside class)
+export const NATURAL_DEFAULTS: Record<string, {
+  duration: number, easing: string
+}> = {
+  fadeIn:        { duration: 800, easing: 'ease-out' },
+  fadeInUp:      { duration: 700, easing: 'ease-out' },
+  fadeInDown:    { duration: 700, easing: 'ease-out' },
+  fadeInLeft:    { duration: 650, easing: 'ease-out' },
+  fadeInRight:   { duration: 650, easing: 'ease-out' },
+  slideUp:       { duration: 500, easing:'cubic-bezier(0.25,0.46,0.45,0.94)' },
+  slideDown:     { duration: 500, easing:'cubic-bezier(0.25,0.46,0.45,0.94)' },
+  slideLeft:     { duration: 450, easing:'cubic-bezier(0.25,0.46,0.45,0.94)' },
+  slideRight:    { duration: 450, easing:'cubic-bezier(0.25,0.46,0.45,0.94)' },
+  zoomIn:        { duration: 600, easing:'cubic-bezier(0.175,0.885,0.32,1.275)' },
+  zoomOut:       { duration: 700, easing: 'ease-out' },
+  zoomInUp:      { duration: 650, easing:'cubic-bezier(0.175,0.885,0.32,1.275)' },
+  bounceIn:      { duration: 800, easing: 'linear' },
+  bounceInUp:    { duration: 900, easing: 'linear' },
+  bounceInDown:  { duration: 900, easing: 'linear' },
+  bounceInLeft:  { duration: 850, easing: 'linear' },
+  bounceInRight: { duration: 850, easing: 'linear' },
+  pulse:         { duration: 1000, easing: 'ease-in-out' },
+  bounce:        { duration: 1200, easing: 'linear' },
+  flipInX:       { duration: 1000, easing: 'linear' },
+  flipInY:       { duration: 1000, easing: 'linear' },
+  rotateIn:      { duration: 900, easing:'cubic-bezier(0.175,0.885,0.32,1.275)' },
+  shake:         { duration: 600, easing: 'ease-in-out' },
+  wobble:        { duration: 1000, easing: 'ease-in-out' },
+  wiggle:        { duration: 800, easing: 'ease-in-out' },
+  jello:         { duration: 900, easing: 'linear' },
+  heartBeat:     { duration: 1300, easing: 'ease-in-out' },
+  flash:         { duration: 1000, easing: 'ease-in-out' },
+  rubberBand:    { duration: 1000, easing: 'linear' },
+  blurIn:        { duration: 900, easing: 'ease-out' },
+  glitch:        { duration: 800, easing: 'steps(1)' },
 }

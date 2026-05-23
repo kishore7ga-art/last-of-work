@@ -24,34 +24,42 @@ interface BlockDefinition {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <aside style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-      <!-- TAB BAR -->
+      <!-- TAB BAR (redesigned) -->
       <div class="tab-bar">
         <button class="tab-btn" 
           [class.active]="activeTab() === 'blocks'" 
           (click)="activeTab.set('blocks')"
           title="Add Blocks">
-          <lucide-icon name="plus" [size]="14"></lucide-icon>
+          <div class="tab-icon-wrap">
+            <lucide-icon name="plus" [size]="16"></lucide-icon>
+          </div>
           <span class="tab-label">Blocks</span>
         </button>
         <button class="tab-btn" 
           [class.active]="activeTab() === 'templates'" 
           (click)="activeTab.set('templates')"
           title="Templates">
-          <lucide-icon name="layout" [size]="14"></lucide-icon>
+          <div class="tab-icon-wrap">
+            <lucide-icon name="layout" [size]="16"></lucide-icon>
+          </div>
           <span class="tab-label">Templates</span>
         </button>
         <button class="tab-btn" 
           [class.active]="activeTab() === 'files'" 
           (click)="activeTab.set('files')"
           title="Files & Pages">
-          <lucide-icon name="files" [size]="14"></lucide-icon>
+          <div class="tab-icon-wrap">
+            <lucide-icon name="files" [size]="16"></lucide-icon>
+          </div>
           <span class="tab-label">Pages</span>
         </button>
         <button class="tab-btn" 
           [class.active]="activeTab() === 'pages'" 
           (click)="activeTab.set('pages')"
-          title="Tree View">
-          <lucide-icon name="file-text" [size]="14"></lucide-icon>
+          title="Site Tree">
+          <div class="tab-icon-wrap">
+            <lucide-icon name="file-text" [size]="16"></lucide-icon>
+          </div>
           <span class="tab-label">Tree</span>
         </button>
       </div>
@@ -138,13 +146,13 @@ interface BlockDefinition {
       overflow: hidden;
     }
 
-    // TAB BAR
+    // ── PREMIUM TAB BAR ────────────────────────────────────
     .tab-bar {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      background: #080810;
-      border-bottom: 1px solid #161622;
-      padding: 6px 8px 0;
+      background: #08080f;
+      border-bottom: 1px solid #18182a;
+      padding: 8px 6px 0;
       gap: 2px;
       flex-shrink: 0;
     }
@@ -154,54 +162,81 @@ interface BlockDefinition {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
-      padding: 5px 2px 7px;
+      gap: 4px;
+      padding: 8px 4px 9px;
       background: transparent;
       border: none;
-      border-radius: 6px 6px 0 0;
-      color: #363650;
+      border-radius: 10px 10px 0 0;
+      color: #3d3d5c;
       cursor: pointer;
-      transition: all 150ms;
+      transition: color 200ms, background 200ms;
+      position: relative;
       
-      lucide-icon { 
-        transition: color 150ms;
+      .tab-icon-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: transparent;
+        transition: background 200ms, box-shadow 200ms;
+        
+        lucide-icon { 
+          transition: color 200ms, filter 200ms;
+          color: inherit;
+        }
       }
       
       .tab-label {
         font-size: 9px;
-        font-weight: 600;
-        letter-spacing: 0.03em;
+        font-weight: 700;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
+        transition: color 200ms;
+        color: inherit;
       }
       
       &:hover:not(.active) {
-        color: #6b6b8a;
+        color: #6868a0;
+        .tab-icon-wrap {
+          background: rgba(255,255,255,0.04);
+        }
       }
       
       &.active {
-        color: #f1f1f3;
-        background: #0c0c14;
-        position: relative;
-        
+        color: #b8c4ff;
+
+        // Crisp underline glow
         &::after {
           content: '';
           position: absolute;
           bottom: 0;
-          left: 15%;
-          width: 70%;
+          left: 12%;
+          width: 76%;
           height: 2px;
-          background: linear-gradient(
-            90deg, #4f6ef7, #7c3aed);
+          background: linear-gradient(90deg, #4f6ef7 0%, #9b6cf8 100%);
           border-radius: 2px 2px 0 0;
+          box-shadow: 0 0 10px rgba(79,110,247,0.8), 0 0 20px rgba(79,110,247,0.3);
         }
         
-        lucide-icon {
-          color: #4f6ef7;
+        .tab-icon-wrap {
+          background: rgba(79, 110, 247, 0.12);
+          box-shadow: 0 0 0 1px rgba(79,110,247,0.2) inset;
+          
+          lucide-icon {
+            color: #7c9ff8;
+            filter: drop-shadow(0 0 5px rgba(124,159,248,0.7));
+          }
+        }
+        
+        .tab-label {
+          color: #7c9ff8;
         }
       }
     }
 
-    // SEARCH BAR (blocks + templates)
+    // ── SEARCH ─────────────────────────────────────
     .panel-search {
       padding: 8px;
       border-bottom: 1px solid #111118;
@@ -229,20 +264,20 @@ interface BlockDefinition {
           font-size: 12px;
           padding: 0 28px;
           outline: none;
-          transition: border-color 150ms;
+          transition: border-color 150ms, box-shadow 150ms;
           box-sizing: border-box;
           
           &::placeholder { color: #2a2a3d; }
           
           &:focus {
             border-color: #4f6ef7;
-            background: #111118;
+            box-shadow: 0 0 0 2px rgba(79,110,247,0.12);
           }
         }
       }
     }
 
-    // BLOCK ITEMS
+    // ── BLOCK LIST ─────────────────────────────────
     .blocks-scroll {
       flex: 1;
       overflow-y: auto;
@@ -258,9 +293,9 @@ interface BlockDefinition {
     .block-category-label {
       font-size: 9px;
       font-weight: 700;
-      color: #4a4a6a;
+      color: #3d3d5c;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       padding: 10px 8px 5px;
     }
 
@@ -308,7 +343,7 @@ interface BlockDefinition {
       &:hover {
         background: #111118;
         
-        .block-icon { color: #4f6ef7; }
+        .block-icon { color: #6b8ff8; }
         .block-label { color: #f1f1f3; }
         .drag-indicator { opacity: 1; }
       }
@@ -320,15 +355,16 @@ interface BlockDefinition {
     }
     
     .sidebar-drag-preview {
-      background: #4f6ef7;
+      background: linear-gradient(135deg, #4f6ef7, #7c3aed);
       color: white;
       padding: 6px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 12px;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 8px 24px rgba(79,110,247,0.4);
+      box-shadow: 0 8px 24px rgba(79,110,247,0.5);
     }
   `]
 })

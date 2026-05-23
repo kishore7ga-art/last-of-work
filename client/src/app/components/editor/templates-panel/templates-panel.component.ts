@@ -24,7 +24,7 @@ export class TemplatesPanelComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
   private templateHtmlCache = new Map<string, SafeHtml>();
 
-  hovered = signal<string | null>(null);
+  hoveredId = signal<string | null>(null);
 
   // Search & Filters
   searchQuery = signal('');
@@ -271,83 +271,15 @@ export class TemplatesPanelComponent implements OnInit {
     return item.id;
   }
 
-  getTemplatePreviewHTML(template: SectionTemplate): SafeHtml {
+  getTemplateHTML(template: SectionTemplate): SafeHtml {
     const cached = this.templateHtmlCache.get(template.id);
     if (cached) return cached;
 
-    const renderBlock = (block: any): string => {
-      const p = block.props || {}
-      switch(block.type) {
-        case 'section':
-          return `<div style="
-            background:${p.backgroundColor||'#f8fafc'};
-            padding:${p.padding||'24px'};
-            width:100%;box-sizing:border-box">
-            ${(block.children||[])
-              .map(renderBlock).join('')}
-          </div>`
-        case 'heading':
-          return `<h2 style="
-            font-size:${p.fontSize||'28px'};
-            font-weight:${p.fontWeight||'700'};
-            color:${p.color||'#111827'};
-            text-align:${p.textAlign||'left'};
-            margin:0;padding:4px 0;
-            line-height:1.2">
-            ${p.content||'Heading'}
-          </h2>`
-        case 'text':
-          return `<p style="
-            font-size:${p.fontSize||'14px'};
-            color:${p.color||'#374151'};
-            text-align:${p.textAlign||'left'};
-            margin:0;padding:4px 0;
-            line-height:1.5">
-            ${p.content||'Text content'}
-          </p>`
-        case 'button':
-          return `<div style="padding:6px 0">
-            <span style="
-              display:inline-block;
-              background:${p.backgroundColor
-                ||'#4f6ef7'};
-              color:${p.color||'#fff'};
-              padding:${p.padding||'8px 20px'};
-              border-radius:${p.borderRadius||'6px'};
-              font-size:13px;font-weight:600">
-              ${p.label||'Button'}
-            </span>
-          </div>`
-        case 'image':
-          return `<div style="
-            width:100%;height:80px;
-            background:linear-gradient(
-              135deg,#e2e8f0,#cbd5e1);
-            border-radius:${p.borderRadius||'4px'};
-            display:flex;align-items:center;
-            justify-content:center;
-            color:#94a3b8;font-size:11px">
-            📷 Image
-          </div>`
-        case 'divider':
-          return `<hr style="
-            border:none;
-            border-top:1px solid 
-              ${p.color||'#e5e7eb'};
-            margin:8px 0"/>`
-        default:
-          return `<div style="
-            height:30px;background:#f1f5f9;
-            border-radius:4px;margin:4px 0">
-          </div>`
-      }
-    }
-
-    const html = `
-      <div style="font-family:Inter,sans-serif;
-        width:900px;">
-        ${template.blocks.map(renderBlock).join('')}
-      </div>`
+    let html = '<div style="font-family:Inter,sans-serif;width:100%;overflow:hidden;">';
+    template.blocks.forEach(block => {
+      html += this.renderBlockPreview(block);
+    });
+    html += '</div>';
 
     const safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
     this.templateHtmlCache.set(template.id, safeHtml);

@@ -29,7 +29,7 @@ export class FileTreeService {
   cutNodeId = signal<string | null>(null);
   copiedNodeId = signal<string | null>(null);
 
-  flatNodes = computed(() => this.flattenTree(this.nodes(), this.expandedIds(), this.searchQuery()));
+  flatNodes = computed(() => this.flattenTree(this.nodes(), this.expandedIds()));
 
   searchResults = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
@@ -199,7 +199,8 @@ export class FileTreeService {
   toggleExpand(id: string): void {
     const nodes = this.cloneNodes();
     const node = this.getNodeFrom(id, nodes);
-    if (!node || node.type !== 'folder') return;
+    // Allow both folders AND file (page) nodes to expand/collapse
+    if (!node || (node.type !== 'folder' && node.type !== 'file')) return;
     node.expanded = !this.expandedIds().has(id);
     this.nodes.set(nodes);
     this.expandedIds.update(set => {
@@ -208,7 +209,8 @@ export class FileTreeService {
       else next.add(id);
       return next;
     });
-    this.saveToStorage();
+    // Don't persist block-expansion state for files (it's dynamic)
+    if (node.type === 'folder') this.saveToStorage();
   }
 
   expandAll(): void {
@@ -245,31 +247,34 @@ export class FileTreeService {
     this.renamingId.set(null);
   }
 
-  flattenTree(nodes: TreeNode[], expandedIds: Set<string>, search: string): TreeNode[] {
-    const q = search.trim().toLowerCase();
-    const flat: TreeNode[] = [];
-
-    const visit = (items: TreeNode[]) => {
+  flattenTree(nodes: TreeNode[], expandedIds: Set<string>): TreeNode[] {
+    const result: TreeNode[] = [];
+    
+    const traverse = (items: TreeNode[]) => {
       items
         .slice()
         .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
         .forEach(node => {
-          const matches = !q || node.name.toLowerCase().includes(q);
-          if (matches) flat.push(node);
-          if (node.type === 'folder' && node.children?.length && (expandedIds.has(node.id) || q)) {
-            visit(node.children);
+          result.push(node);
+          
+          if (node.type === 'folder' && 
+              expandedIds.has(node.id) &&
+              node.children?.length) {
+            traverse(node.children);
           }
           
-          // If page is expanded and is the active page, show its blocks
-          if (node.type === 'file' && expandedIds.has(node.id) && node.pageId && node.pageId === this.builderStore.activePageId()) {
+          // If page is expanded, show its blocks
+          if (node.type === 'file' &&
+              expandedIds.has(node.id) &&
+              node.pageId) {
             const blocks = this.getPageBlocks(node.pageId);
-            blocks.forEach(b => flat.push(b));
+            blocks.forEach(b => result.push(b));
           }
         });
     };
-
-    visit(nodes);
-    return flat;
+    
+    traverse(nodes);
+    return result;
   }
 
   currentPageId(): string | null {

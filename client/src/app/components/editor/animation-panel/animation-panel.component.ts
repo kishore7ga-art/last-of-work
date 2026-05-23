@@ -5,6 +5,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { CanvasBlock } from '../../../store/builder.models';
 import { BlockAnimation, ANIMATION_GROUPS, defaultAnimation } from '../../../models/animation.models';
 import { BuilderStore } from '../../../store/builder.store';
+import { NATURAL_DEFAULTS } from '../../../directives/animate.directive';
 
 @Component({
   selector: 'app-animation-panel',
@@ -431,6 +432,7 @@ export class AnimationPanelComponent {
   private store = inject(BuilderStore);
   
   groups = ANIMATION_GROUPS;
+  previewing = signal(false);
 
   // Computed signal for current animation
   anim = computed(() => {
@@ -465,49 +467,54 @@ export class AnimationPanelComponent {
     this.animationChange.emit(newAnim);
   }
 
-  previewCurrent() {
-    // 1. Re-render element by changing preview state briefly
-    // Find the wrapper element
-    const el = document.getElementById('block-' + this.block.id) as HTMLElement;
-    if (!el) return;
+  previewCurrent(): void {
+    const blockId = this.block?.id;
+    if (!blockId) return;
     
-    // Remove play class to reset
-    el.classList.remove('mb-anim-play');
-    el.style.animation = 'none';
-    
-    // Force reflow
-    void el.offsetWidth;
-    
-    // Re-apply animation via directive
-    // We can do this by toggling a class that the directive listens to, or just
-    // simulating an IntersectionObserver entry. 
-    // Since the directive handles the DOM, we can just temporarily add the preview state
-    // Actually, we can dispatch a custom event that the directive could listen to, 
-    // but the easiest is to just let Angular update the DOM. 
-    
-    // Quick hack for preview in editor without modifying directive more:
-    // Just re-apply the animation directly to the element
-    const a = this.anim();
-    if (a.type !== 'none' && a.type !== 'typewriter') {
-      const iterCount = a.repeat === 'once' ? '1' : a.repeat === 'loop' ? 'infinite' : String(a.repeat);
-      el.style.animation = [
-        `mb-${a.type}`,
-        `${a.duration}ms`,
-        a.easing,
-        `0ms`, // no delay for manual preview
-        iterCount,
-        a.direction,
-        'both'
-      ].join(' ');
-      el.classList.add('mb-anim-play', `mb-${a.type}`);
-    } else if (a.type === 'typewriter') {
-      // Typewriter requires directive logic.
-      // Easiest is to trigger a re-render
-      const original = { ...a };
-      this.animationChange.emit({ ...a, type: 'none' as any });
-      setTimeout(() => {
-        this.animationChange.emit(original);
-      }, 50);
+    const el = document.getElementById('block-' + blockId);
+    if (!el) {
+      console.warn('Block element not found:', 'block-' + blockId);
+      return;
     }
+    
+    // Enable animation if not enabled
+    if (!this.anim().enabled) {
+      this.updateField('enabled', true);
+      setTimeout(() => this.triggerPreview(el), 100);
+    } else {
+      this.triggerPreview(el);
+    }
+  }
+
+  private triggerPreview(el: HTMLElement): void {
+    const anim = this.anim();
+    const defaults = NATURAL_DEFAULTS[anim.type]
+      || { duration: 600, easing: 'ease-out' };
+    
+    // Reset
+    el.style.animation = 'none';
+    el.style.opacity = '0';
+    this.previewing.set(true);
+    
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.opacity = '';
+        el.style.animation = [
+          `mb-${anim.type}`,
+          `${anim.duration ?? defaults.duration}ms`,
+          anim.easing === 'ease-out' 
+            ? defaults.easing : anim.easing,
+          `${anim.delay ?? 0}ms`,
+          '1',
+          'normal',
+          'both'
+        ].join(' ');
+        
+        const total = (anim.duration ?? defaults.duration) + (anim.delay ?? 0) + 200;
+        setTimeout(() => {
+          this.previewing.set(false);
+        }, total);
+      });
+    });
   }
 }
