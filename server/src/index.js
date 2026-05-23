@@ -65,23 +65,48 @@ app.get('/api/health', async (req, res) => {
 })
 
 // ── API Routes ────────────────────────────────────────────
-const routes = [
-  { path: '/api/pages',      file: './routes/pages.routes' },
-  { path: '/api/public',     file: './routes/public.routes' },
-  { path: '/api/components', file: './routes/components.routes' },
-  { path: '/api/user',       file: './routes/user.routes' },
-  { path: '/api/workspaces', file: './routes/workspace.routes' },
-  { path: '/api/comments',   file: './routes/comment.routes' },
-]
+try {
+  app.use('/api/pages', require('./routes/pages.routes'));
+  console.log('✅ Route: /api/pages');
+} catch (e) {
+  console.warn('⚠️  Skipped /api/pages:', e.message);
+}
 
-routes.forEach(({ path: routePath, file }) => {
-  try {
-    app.use(routePath, require(file))
-    console.log(`✅ Route: ${routePath}`)
-  } catch (e) {
-    console.warn(`⚠️  Skipped ${routePath}: ${e.message}`)
-  }
-})
+try {
+  app.use('/api/public', require('./routes/public.routes'));
+  console.log('✅ Route: /api/public');
+} catch (e) {
+  console.warn('⚠️  Skipped /api/public:', e.message);
+}
+
+try {
+  app.use('/api/components', require('./routes/components.routes'));
+  console.log('✅ Route: /api/components');
+} catch (e) {
+  console.warn('⚠️  Skipped /api/components:', e.message);
+}
+
+try {
+  app.use('/api/user', require('./routes/user.routes'));
+  console.log('✅ Route: /api/user');
+} catch (e) {
+  console.warn('⚠️  Skipped /api/user:', e.message);
+}
+
+try {
+  app.use('/api/workspaces', require('./routes/workspace.routes'));
+  console.log('✅ Route: /api/workspaces');
+} catch (e) {
+  console.warn('⚠️  Skipped /api/workspaces:', e.message);
+}
+
+try {
+  app.use('/api/comments', require('./routes/comment.routes'));
+  console.log('✅ Route: /api/comments');
+} catch (e) {
+  console.warn('⚠️  Skipped /api/comments:', e.message);
+}
+
 
 // ── SPA fallback (all non-API routes → Angular index.html) ─
 app.get('*', (req, res) => {
