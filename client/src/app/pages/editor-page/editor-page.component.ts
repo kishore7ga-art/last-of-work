@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, signal, DestroyRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
@@ -11,7 +11,8 @@ import { BuilderStore } from '../../store/builder.store';
 import { PageApiService } from '../../services/page-api.service';
 import { StorageService } from '../../services/storage.service';
 import { ToastService } from '../../services/toast.service';
-import { Subscription, interval } from 'rxjs';
+import { Subscription, interval, EMPTY, catchError } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PreviewModalComponent } from '../../components/editor/preview-modal/preview-modal.component';
 import { SettingsModalComponent } from '../../components/editor/settings-modal/settings-modal.component';
 import { CommentsPanelComponent } from '../../components/editor/comments-panel/comments-panel.component';
@@ -187,7 +188,11 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   private themeService = inject(ThemeService);
   autoSave = inject(AutoSaveService);
   private fileTreeService = inject(FileTreeService);
+  private destroyRef = inject(DestroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
+  comments = signal<any[]>([]);
+  isLoading = signal(true);
   pageId: string | null = null;
   pages = signal<any[]>([]);
   historyOpen = signal(false);
@@ -246,6 +251,8 @@ export class EditorPageComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe(params => {
       const newPageId = params.get('id');
 
+      this.isLoading.set(true);
+
       // Clean up previous page's auto-save before loading the new page
       if (this.pageId && this.pageId !== newPageId) {
         this.autoSave.destroy();
@@ -263,6 +270,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         this.store.activePageId.set('new');
         this.store.loadBlocks([]);
         this.autoSave.resumeAfterLoad();
+        this.isLoading.set(false);
       } else if (this.pageId && this.pageId !== 'temp') {
         this.loadPage(this.pageId);
       } else {
@@ -271,6 +279,7 @@ export class EditorPageComponent implements OnInit, OnDestroy {
         this.store.activePageId.set('temp');
         this.store.loadBlocks(this.storageService.loadPage() || []);
         this.autoSave.resumeAfterLoad();
+        this.isLoading.set(false);
       }
 
       if (this.pageId && this.pageId !== 'new' && this.pageId !== 'temp') {
@@ -313,48 +322,66 @@ export class EditorPageComponent implements OnInit, OnDestroy {
   }
 
   loadPage(id: string) {
-    // ── Suppress auto-save during the entire load sequence ──────────────────
     this.autoSave.suppressDuringLoad();
 
-    this.pageApi.getPage(id).subscribe({
-      next: (page) => {
-        // Load all metadata SILENTLY (no auto-save queued)
-        this.store.setPageTitleSilent(page.title);
-        this.store.setPageSlugSilent(page.slug || '');
-        this.store.setSEOSilent(page.seo);
-        this.store.setSettingsSilent(page.settings);
-        this.store.updatePublishedSilent(page.published);
-
-        if (page.globalStyles) {
-          this.store.globalStyles.set(page.globalStyles); // write directly, no queued save
-        }
-
-        this.store.activePageId.set(page._id);
-        this.fileTreeService.selectNodeByPageId(page._id);
-
-        if (page.settings) {
-          this.themeService.restoreFromPage(page.settings.themeId, page.settings.customTheme);
-        }
-
-        // Load blocks into history (no save queued)
-        this.store.loadBlocks(page.blocks?.length ? page.blocks : []);
-
-        // ── Start auto-save AFTER everything is loaded ───────────────────────
-        this.autoSave.init(page._id);
+    this.pageApi.getPage(id).pipe(
+      catchError(err => {
+        console.error('Page load failed:', err);
+        this.isLoading.set(false);
         this.autoSave.resumeAfterLoad();
-
-        // Load comment count (non-blocking)
-        this.commentApi.getComments(page._id).subscribe({
-          next: (comments) => {
-            this.unresolvedCommentCount.set(comments.filter(c => !c.resolved).length);
-          }
-        });
-      },
-      error: () => {
+        this.router.navigate(['/dashboard']);
+        return EMPTY;
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(page => {
+      if (!page) {
         this.autoSave.resumeAfterLoad();
-        this.toast.error('Failed to load page');
+        this.router.navigate(['/dashboard']);
+        return;
       }
+
+      this.store.setPageTitleSilent(page.title);
+      this.store.setPageSlugSilent(page.slug || '');
+      this.store.setSEOSilent(page.seo);
+      this.store.setSettingsSilent(page.settings);
+      this.store.updatePublishedSilent(page.published);
+
+      if (page.globalStyles) {
+        this.store.globalStyles.set(page.globalStyles);
+      }
+
+      this.store.activePageId.set(page._id);
+      this.fileTreeService.selectNodeByPageId(page._id);
+
+      if (page.settings) {
+        this.themeService.restoreFromPage(page.settings.themeId, page.settings.customTheme);
+      }
+
+      this.store.loadBlocks(page.blocks?.length ? page.blocks : []);
+
+      this.autoSave.init(page._id);
+      this.autoSave.resumeAfterLoad();
+      this.isLoading.set(false);
+
+      this.loadCommentsSafely(page._id);
+
+      this.cdr.markForCheck();
     });
+  }
+
+  private loadCommentsSafely(pageId: string): void {
+    setTimeout(() => {
+      this.commentApi.getComments(pageId).subscribe({
+        next: (c) => {
+          this.comments.set(c || []);
+          this.unresolvedCommentCount.set((c || []).filter(comment => !comment.resolved).length);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.comments.set([]);
+        }
+      });
+    }, 500);
   }
 
   loadPageTabs() {

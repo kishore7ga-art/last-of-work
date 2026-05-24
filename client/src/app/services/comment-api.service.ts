@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of, catchError } from 'rxjs';
 import { getApiBaseUrl } from '../config/api.config';
 
 export interface CommentReply {
@@ -44,38 +44,47 @@ export class CommentApiService {
   private commentApiUrl = `${getApiBaseUrl()}/comments`;
 
   getComments(pageId: string): Observable<Comment[]> {
+    if (!pageId) return of([]);
     return this.http.get<{ success: boolean; comments: Comment[] }>(`${this.pageApiUrl}/${pageId}/comments`).pipe(
-      map(res => res.comments)
+      map(res => res?.comments || []),
+      catchError(() => of([]))
     );
   }
 
-  addComment(pageId: string, content: string, blockId?: string): Observable<Comment> {
+  addComment(pageId: string, content: string, blockId?: string): Observable<Comment | null> {
     return this.http.post<{ success: boolean; comment: Comment }>(`${this.pageApiUrl}/${pageId}/comments`, { content, blockId }).pipe(
-      map(res => res.comment)
+      map(res => res?.comment || null),
+      catchError(err => {
+        console.warn('Add comment failed:', err);
+        return of(null);
+      })
     );
   }
 
-  updateComment(commentId: string, content: string): Observable<Comment> {
+  updateComment(commentId: string, content: string): Observable<Comment | null> {
     return this.http.put<{ success: boolean; comment: Comment }>(`${this.commentApiUrl}/${commentId}`, { content }).pipe(
-      map(res => res.comment)
+      map(res => res?.comment || null),
+      catchError(() => of(null))
     );
   }
 
-  deleteComment(commentId: string): Observable<void> {
+  deleteComment(commentId: string): Observable<any> {
     return this.http.delete<{ success: boolean }>(`${this.commentApiUrl}/${commentId}`).pipe(
-      map(() => undefined)
+      catchError(() => of(null))
     );
   }
 
-  resolveComment(commentId: string): Observable<Comment> {
+  resolveComment(commentId: string): Observable<Comment | null> {
     return this.http.post<{ success: boolean; comment: Comment }>(`${this.commentApiUrl}/${commentId}/resolve`, {}).pipe(
-      map(res => res.comment)
+      map(res => res?.comment || null),
+      catchError(() => of(null))
     );
   }
 
-  addReply(commentId: string, content: string): Observable<Comment> {
+  addReply(commentId: string, content: string): Observable<Comment | null> {
     return this.http.post<{ success: boolean; comment: Comment }>(`${this.commentApiUrl}/${commentId}/replies`, { content }).pipe(
-      map(res => res.comment)
+      map(res => res?.comment || null),
+      catchError(() => of(null))
     );
   }
 }

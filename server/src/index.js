@@ -143,7 +143,7 @@ loadRoute('/api/public', require('./routes/public.routes'))
 loadRoute('/api/components', require('./routes/components.routes'))
 loadRoute('/api/user', require('./routes/user.routes'))
 loadRoute('/api/workspaces', require('./routes/workspace.routes'))
-loadRoute('/api/comments', require('./routes/comment.routes'))
+loadRoute('/api', require('./routes/comment.routes'))
 
 // Serve Angular for ALL non-API routes
 app.get('*', (req, res) => {

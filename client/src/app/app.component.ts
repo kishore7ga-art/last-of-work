@@ -20,5 +20,19 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.themeService.loadSavedTheme();
+
+    // Catch ALL uncaught errors globally
+    window.addEventListener('unhandledrejection', (event) => {
+      // Prevent console spam
+      event.preventDefault();
+      console.warn(
+        'Handled error:',
+        event.reason?.message || event.reason
+      );
+    });
+
+    window.addEventListener('error', (event) => {
+      console.warn('Global error caught:', event.message);
+    });
   }
 }

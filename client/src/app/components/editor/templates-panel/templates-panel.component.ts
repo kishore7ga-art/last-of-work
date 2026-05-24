@@ -164,107 +164,68 @@ export class TemplatesPanelComponent implements OnInit {
   }
 
   addTemplate(template: SectionTemplate): void {
-    console.log('Adding template:', 
-      template.name,
-      'blocks:', template.blocks.length);
-
-    if (!template.blocks?.length) {
-      console.error('Template has no blocks!');
+    if (!template?.blocks?.length) {
       this.toast?.show(
         'Template is empty', 'error');
       return;
     }
 
+    const VALID_TYPES = new Set([
+      'text','heading','image','button',
+      'section','divider','spacer','video',
+      'columns','card','form','html',
+      'icon','map'
+    ]);
+
     const ts = Date.now();
-    const cloneBlock = (
-      block: any, index: number): any => {
-      const newId = 
-        `${ts}-${index}-${Math.random()
-          .toString(36).slice(2, 7)}`;
-      
-      console.log('Cloning block:', 
-        block.type, '→', newId);
-      
-      return {
-        ...block,
-        id: newId,
-        props: { ...(block.props || {}) },
-        animation: block.animation
-          ? { ...block.animation }
-          : undefined,
-        visibility: block.visibility
-          ? { ...block.visibility }
-          : { desktop: true, mobile: true,
-              tablet: true },
-        children: block.children?.map(
-          (c: any, ci: number) =>
-            cloneBlock(c, index * 100 + ci)
-        )
-      };
-    };
+    const clone = (b: any, i: number): any => ({
+      ...b,
+      id: `${ts}-${i}-${Math.random()
+        .toString(36).slice(2,6)}`,
+      props: { ...(b.props || {}) },
+      animation: b.animation
+        ? { ...b.animation } : undefined,
+      visibility: {
+        desktop: true, mobile: true,
+        tablet: true
+      },
+      children: b.children?.map(
+        (c: any, ci: number) =>
+          clone(c, i * 100 + ci)
+      ) || []
+    });
 
-    const newBlocks = template.blocks
-      .map((block, i) => cloneBlock(block, i));
+    const blocks = template.blocks
+      .map((b, i) => clone(b, i))
+      .filter(b => {
+        if (!VALID_TYPES.has(b.type)) {
+          console.warn('Skip:', b.type);
+          return false;
+        }
+        return true;
+      });
 
-    console.log('Blocks to add:', 
-      newBlocks.map(b => b.type));
-
-    // Check valid types
-    const validTypes = ['text','heading','image',
-      'button','section','divider','spacer',
-      'video','columns','card','form','html',
-      'icon','map'];
-
-    const invalidBlocks = newBlocks
-      .filter(b => !validTypes.includes(b.type));
-    
-    if (invalidBlocks.length) {
-      console.error('Invalid block types:',
-        invalidBlocks.map(b => b.type));
-    }
-
-    const validBlocks = newBlocks
-      .filter(b => validTypes.includes(b.type));
-
-    if (!validBlocks.length) {
-      console.error('No valid blocks!',
-        'Check template block types match:',
-        validTypes);
+    if (!blocks.length) {
       this.toast?.show(
-        `Template error: invalid block types`,
-        'error');
+        'No valid blocks in template', 'error');
       return;
     }
 
-    // Add to store
-    this.store.addMultipleBlocks(validBlocks);
+    this.store.addMultipleBlocks(blocks);
     this.trackRecent(template.id);
+    this.store.selectBlock(blocks[0].id);
 
-    console.log('✅ Added', 
-      validBlocks.length, 'blocks to canvas');
-
-    // Select first block
-    if (validBlocks[0]?.id) {
-      this.store.selectBlock(validBlocks[0].id);
-      
-      setTimeout(() => {
-        const el = document.getElementById(
-          'block-' + validBlocks[0].id);
-        if (el) {
-          el.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-        } else {
-          console.warn(
-            'Block element not found in DOM:',
-            'block-' + validBlocks[0].id);
-        }
-      }, 200);
-    }
+    setTimeout(() => {
+      document.getElementById(
+        'block-' + blocks[0].id
+      )?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 150);
 
     this.toast?.show(
-      `✓ Added ${validBlocks.length} blocks`,
+      `✓ ${blocks.length} blocks added`,
       'success'
     );
   }

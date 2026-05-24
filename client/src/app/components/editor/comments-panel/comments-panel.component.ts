@@ -487,8 +487,10 @@ export class CommentsPanelComponent implements OnInit {
     
     this.commentApi.addComment(this.pageId, this.newCommentText).subscribe({
       next: (comment) => {
-        this.comments.update(list => [comment, ...list]);
-        this.socketService.emitComment(this.pageId!, comment);
+        if (comment) {
+          this.comments.update(list => [comment, ...list]);
+          this.socketService.emitComment(this.pageId!, comment);
+        }
         this.newCommentText = '';
         this.toast.success('Comment added');
       }
@@ -501,9 +503,11 @@ export class CommentsPanelComponent implements OnInit {
 
     this.commentApi.addReply(commentId, content).subscribe({
       next: (updatedComment) => {
-        this.comments.update(list => 
-          list.map(c => c._id === commentId ? updatedComment : c)
-        );
+        if (updatedComment) {
+          this.comments.update(list => 
+            list.map(c => c._id === commentId ? updatedComment : c)
+          );
+        }
         this.replies[commentId] = '';
         this.toast.success('Reply added');
       }
@@ -513,9 +517,11 @@ export class CommentsPanelComponent implements OnInit {
   resolveComment(commentId: string) {
     this.commentApi.resolveComment(commentId).subscribe({
       next: (updatedComment) => {
-        this.comments.update(list => 
-          list.map(c => c._id === commentId ? updatedComment : c)
-        );
+        if (updatedComment) {
+          this.comments.update(list => 
+            list.map(c => c._id === commentId ? updatedComment : c)
+          );
+        }
         this.toast.success('Comment resolved');
       }
     });
