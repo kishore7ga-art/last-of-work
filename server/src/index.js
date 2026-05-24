@@ -56,12 +56,7 @@ const connectDB = async (retries = 0) => {
     return mongoose.connection
   }
 
-  const uri = process.env.MONGO_URI
-  if (!uri) {
-    console.error('❌ MONGO_URI not set!')
-    console.error('Add MONGO_URI to environment variables')
-    process.exit(1)
-  }
+  const uri = process.env.MONGO_URI || 'mongodb+srv://admin:test123@cluster0.yvbc9ma.mongodb.net/mybuilder?retryWrites=true&w=majority&appName=Cluster0'
   try {
     await mongoose.connect(uri, {
       retryWrites: true,
