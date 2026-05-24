@@ -163,40 +163,110 @@ export class TemplatesPanelComponent implements OnInit {
     return this.favorites().includes(id);
   }
 
-  // Add template blocks to canvas
   addTemplate(template: SectionTemplate): void {
-    const ts = Date.now();
-    const clone = (b: any, i: number): any => ({
-      ...b,
-      id: `${ts}-${i}-${Math.random().toString(36).slice(2, 6)}`,
-      props: { ...b.props },
-      children: b.children?.map(
-        (c: any, ci: number) =>
-          clone(c, i * 100 + ci)
-      )
-    });
+    console.log('Adding template:', 
+      template.name,
+      'blocks:', template.blocks.length);
 
-    const blocks = template.blocks
-      .map((b, i) => clone(b, i))
-      .filter(b => this.store.isValidBlockType(b.type));
-
-    if (!blocks.length) {
-      this.toast.show('Template has no valid blocks', 'error');
+    if (!template.blocks?.length) {
+      console.error('Template has no blocks!');
+      this.toast?.show(
+        'Template is empty', 'error');
       return;
     }
 
-    this.store.addMultipleBlocks(blocks);
-    this.store.selectBlock(blocks[0].id);
+    const ts = Date.now();
+    const cloneBlock = (
+      block: any, index: number): any => {
+      const newId = 
+        `${ts}-${index}-${Math.random()
+          .toString(36).slice(2, 7)}`;
+      
+      console.log('Cloning block:', 
+        block.type, '→', newId);
+      
+      return {
+        ...block,
+        id: newId,
+        props: { ...(block.props || {}) },
+        animation: block.animation
+          ? { ...block.animation }
+          : undefined,
+        visibility: block.visibility
+          ? { ...block.visibility }
+          : { desktop: true, mobile: true,
+              tablet: true },
+        children: block.children?.map(
+          (c: any, ci: number) =>
+            cloneBlock(c, index * 100 + ci)
+        )
+      };
+    };
+
+    const newBlocks = template.blocks
+      .map((block, i) => cloneBlock(block, i));
+
+    console.log('Blocks to add:', 
+      newBlocks.map(b => b.type));
+
+    // Check valid types
+    const validTypes = ['text','heading','image',
+      'button','section','divider','spacer',
+      'video','columns','card','form','html',
+      'icon','map'];
+
+    const invalidBlocks = newBlocks
+      .filter(b => !validTypes.includes(b.type));
+    
+    if (invalidBlocks.length) {
+      console.error('Invalid block types:',
+        invalidBlocks.map(b => b.type));
+    }
+
+    const validBlocks = newBlocks
+      .filter(b => validTypes.includes(b.type));
+
+    if (!validBlocks.length) {
+      console.error('No valid blocks!',
+        'Check template block types match:',
+        validTypes);
+      this.toast?.show(
+        `Template error: invalid block types`,
+        'error');
+      return;
+    }
+
+    // Add to store
+    this.store.addMultipleBlocks(validBlocks);
     this.trackRecent(template.id);
 
-    setTimeout(() => {
-      document.getElementById('block-' + blocks[0].id)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }, 100);
+    console.log('✅ Added', 
+      validBlocks.length, 'blocks to canvas');
 
-    this.toast.show(`✓ ${template.name} added`, 'success');
+    // Select first block
+    if (validBlocks[0]?.id) {
+      this.store.selectBlock(validBlocks[0].id);
+      
+      setTimeout(() => {
+        const el = document.getElementById(
+          'block-' + validBlocks[0].id);
+        if (el) {
+          el.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        } else {
+          console.warn(
+            'Block element not found in DOM:',
+            'block-' + validBlocks[0].id);
+        }
+      }, 200);
+    }
+
+    this.toast?.show(
+      `✓ Added ${validBlocks.length} blocks`,
+      'success'
+    );
   }
 
   // Clear search bar

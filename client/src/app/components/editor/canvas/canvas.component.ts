@@ -86,7 +86,16 @@ export class CanvasComponent implements OnInit, OnDestroy {
   ]);
 
   getComponent(type: string): Type<any> {
-    return this.componentRegistry.get(type) || FallbackBlockComponent;
+    const comp = this.componentRegistry.get(type);
+    if (!comp) {
+      console.warn(
+        `⚠️ No component for type: "${type}"`,
+        '\nAvailable types:',
+        [...this.componentRegistry.keys()]
+      );
+      return FallbackBlockComponent;
+    }
+    return comp;
   }
 
   getComponentInputs(block: CanvasBlock): any {
