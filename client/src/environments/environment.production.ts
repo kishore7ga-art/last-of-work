@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://mybuilder.onrender.com/api',
+  apiUrl: '/api',
   socketUrl: '',
   enableSocket: false
 };

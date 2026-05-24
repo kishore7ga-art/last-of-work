@@ -6,30 +6,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Navy Blue Dark Palette */
-  --bg-primary:    #050b18;
-  --bg-secondary:  #0a1628;
-  --bg-tertiary:   #0f2040;
-  --bg-elevated:   #142850;
-  --bg-canvas:     #0d1f3c;
-  --border-subtle: #1e3a5f;
-  --border-active: #2563a8;
+  /* Black & White Monochrome Dark Palette */
+  --bg-primary:    #000000;
+  --bg-secondary:  #121212;
+  --bg-tertiary:   #1e1e1e;
+  --bg-elevated:   #2a2a2a;
+  --bg-canvas:     #0d0d0d;
+  --border-subtle: #2d2d2d;
+  --border-active: #525252;
 
-  /* Navy Blue Accents */
-  --accent-blue:   #1d6af8;
-  --accent-navy:   #0a4cc4;
-  --accent-light:  #4f90ff;
-  --accent-purple: #5b4cf8;
-  --accent-teal:   #0ea5e9;
-  --accent-glow:   rgba(29, 106, 248, 0.4);
+  /* Monochrome Highlights */
+  --accent-blue:   #ffffff;
+  --accent-navy:   #737373;
+  --accent-light:  #e5e5e5;
+  --accent-purple: #a3a3a3;
+  --accent-teal:   #ffffff;
+  --accent-glow:   rgba(255, 255, 255, 0.15);
 
   /* Text */
-  --text-primary:   #e8f0ff;
-  --text-secondary: #7ba3d4;
-  --text-muted:     #3a6090;
+  --text-primary:   #ffffff;
+  --text-secondary: #a3a3a3;
+  --text-muted:     #666666;
 
   /* Status */
-  --success: #22c55e;
+  --success: #10b981;
   --danger:  #ef4444;
   --warning: #f59e0b;
 }
@@ -189,11 +189,11 @@ textarea.input-field {
 .cdk-drop-list-dragging * { transition: transform 150ms ease !important; }
 .cdk-drag-animating { transition: transform 150ms cubic-bezier(0.2, 0, 0, 1) !important; }
 
-/* ── NAVY BLUE UTILITY OVERRIDES ──────────────────────────── */
-/* Make Tailwind blue classes use our navy accent */
-.from-blue-600 { --tw-gradient-from: #1d6af8 !important; }
-.to-violet-600  { --tw-gradient-to: #5b4cf8 !important; }
-.bg-blue-500\/10 { background-color: rgba(29, 106, 248, 0.1) !important; }
-.text-blue-300  { color: #7eb3ff !important; }
-.text-blue-400  { color: #4f90ff !important; }
-.border-blue-400 { border-color: #4f90ff !important; }
+/* ── BLACK & WHITE UTILITY OVERRIDES ──────────────────────── */
+/* Make Tailwind blue classes use our white accent */
+.from-blue-600 { --tw-gradient-from: #ffffff !important; }
+.to-violet-600  { --tw-gradient-to: #a3a3a3 !important; }
+.bg-blue-500\/10 { background-color: rgba(255, 255, 255, 0.05) !important; }
+.text-blue-300  { color: #d4d4d4 !important; }
+.text-blue-400  { color: #ffffff !important; }
+.border-blue-400 { border-color: #ffffff !important; }
