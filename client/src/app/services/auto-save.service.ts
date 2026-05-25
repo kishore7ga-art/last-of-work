@@ -73,10 +73,10 @@ export class AutoSaveService {
 
   // ── Internal ──────────────────────────────────────────
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly DEBOUNCE_MS = 2000;
+  private readonly DEBOUNCE_MS = 800;
 
   /** Tracks which sections of the page have changed. */
-  private dirty = { blocks: false, title: false, seo: false };
+  private changedFields = new Set<string>();
 
   /**
    * When true, ALL triggerSave() calls are silently dropped.
@@ -91,7 +91,7 @@ export class AutoSaveService {
   init(pageId: string): void {
     this.destroy();                     // tear down any previous page's timers
     this.currentPageId.set(pageId);
-    this.dirty = { blocks: false, title: false, seo: false };
+    this.changedFields.clear();
     this.hasUnsavedChanges.set(false);
     this._suppressSaves = false;
 
@@ -115,7 +115,7 @@ export class AutoSaveService {
    */
   resumeAfterLoad(): void {
     this._suppressSaves = false;
-    this.dirty = { blocks: false, title: false, seo: false };
+    this.changedFields.clear();
     this.hasUnsavedChanges.set(false);
     // Cancel any timer that may have been queued before suppression was set
     if (this.debounceTimer) {
@@ -139,14 +139,24 @@ export class AutoSaveService {
     }
 
     // Mark dirty flags
-    if (reason.includes('block') || reason === 'unknown' || reason === 'force' || reason === 'global-styles-updated') {
-      this.dirty.blocks = true;
+    if (reason.includes('block') || 
+        reason.includes('template') || 
+        reason === 'added' || 
+        reason === 'reorder' || 
+        reason === 'undo' || 
+        reason === 'redo' || 
+        reason === 'component-added' || 
+        reason === 'theme-changed' || 
+        reason === 'global-styles-updated' || 
+        reason === 'unknown' || 
+        reason === 'force') {
+      this.changedFields.add('blocks');
     }
-    if (reason.includes('title') || reason === 'metadata-updated' || reason === 'unknown' || reason === 'force') {
-      this.dirty.title = true;
+    if (reason.includes('title') || reason === 'metadata-updated' || reason === 'unknown' || reason === 'force' || reason === 'title-changed') {
+      this.changedFields.add('title');
     }
-    if (reason.includes('seo') || reason === 'unknown' || reason === 'force') {
-      this.dirty.seo = true;
+    if (reason.includes('seo') || reason === 'unknown' || reason === 'force' || reason === 'seo-updated') {
+      this.changedFields.add('seo');
     }
 
     this.hasUnsavedChanges.set(true);
@@ -173,7 +183,9 @@ export class AutoSaveService {
   forceSave(): void {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     // Mark all dirty so we always send the full latest state
-    this.dirty = { blocks: true, title: true, seo: true };
+    this.changedFields.add('blocks');
+    this.changedFields.add('title');
+    this.changedFields.add('seo');
     this._executeSave();
   }
 
@@ -182,7 +194,7 @@ export class AutoSaveService {
     this.debounceTimer = null;
     this.currentPageId.set(null);
     this._suppressSaves = false;
-    this.dirty = { blocks: false, title: false, seo: false };
+    this.changedFields.clear();
   }
 
   // ── Core save ─────────────────────────────────────────
@@ -194,17 +206,26 @@ export class AutoSaveService {
     this.saveStatus.set('saving');  // ← SHOW SPINNER
     this.saveError.set(null);
 
-    const snapshot = { ...this.dirty };
-    this.dirty = { blocks: false, title: false, seo: false };
+    const snapshot = new Set(this.changedFields);
+    this.changedFields.clear();
 
     try {
       const payload = this._buildPayload(snapshot);
-      const updatedPage = await firstValueFrom(
-        this.pageApi.updatePage(
-          pageId,
-          payload
+
+      // Add timeout to prevent hanging
+      const saveWithTimeout = Promise.race([
+        firstValueFrom(
+          this.pageApi.updatePage(pageId, payload)
+        ),
+        new Promise((_, reject) =>
+          setTimeout(() =>
+            reject(new Error('Save timeout')),
+            8000  // 8 second max
+          )
         )
-      );
+      ]);
+
+      const updatedPage = (await saveWithTimeout) as any;
       this.saveStatus.set('saved');  // ← SHOW CHECK
       this.lastSavedAt.set(new Date(updatedPage?.updatedAt ?? new Date()));
       this.hasUnsavedChanges.set(false);
@@ -223,9 +244,7 @@ export class AutoSaveService {
       }, 3000);
     } catch(e: any) {
       // Restore dirty flags so the next retry sends everything
-      this.dirty.blocks = this.dirty.blocks || snapshot.blocks;
-      this.dirty.title  = this.dirty.title  || snapshot.title;
-      this.dirty.seo    = this.dirty.seo    || snapshot.seo;
+      snapshot.forEach(field => this.changedFields.add(field));
 
       this.saveStatus.set('error');  // ← SHOW ERROR
       this.saveError.set(e?.message || 'Save failed. Retrying…');
@@ -236,14 +255,14 @@ export class AutoSaveService {
     }
   }
 
-  private _buildPayload(snapshot: typeof this.dirty): SavePayload {
+  private _buildPayload(snapshot: Set<string>): SavePayload {
     const payload: SavePayload = {
       pageId: this.currentPageId()!,
       updatedAt: new Date().toISOString()
     };
-    if (snapshot.blocks) payload.blocks = this.store.blocks();
-    if (snapshot.title)  payload.title  = this.store.pageTitle();
-    if (snapshot.seo)    payload.seo    = this.store.seoSettings();
+    if (snapshot.has('blocks')) payload.blocks = this.store.blocks();
+    if (snapshot.has('title'))  payload.title  = this.store.pageTitle();
+    if (snapshot.has('seo'))    payload.seo    = this.store.seoSettings();
     return payload;
   }
 

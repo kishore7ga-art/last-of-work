@@ -20,6 +20,7 @@ export class BuilderStore {
   previewMode = signal<'desktop' | 'tablet' | 'mobile'>('desktop');
   history = signal<CanvasBlock[][]>([]);
   historyIndex = signal<number>(-1);
+  isDirty = signal<boolean>(false);
 
   // NEW: Mobile-specific editing state signals
   editMode = signal<'desktop' | 'mobile'>('desktop');
@@ -511,29 +512,41 @@ export class BuilderStore {
   addMultipleBlocks(blocks: CanvasBlock[], index?: number, reason = 'template-added'): string[] {
     if (blocks.length === 0) return [];
 
-    this.blocks.update(b => {
-      const arr = [...b];
+    console.log('Store: adding', blocks.length, 'blocks');
+
+    // Update signal synchronously
+    this.blocks.update(current => {
+      const arr = [...current];
       if (typeof index === 'number' && index >= 0) {
         arr.splice(index, 0, ...blocks);
       } else {
         arr.push(...blocks);
       }
+      console.log('Store: total blocks now', arr.length);
       return arr;
     });
 
     this.saveHistory(this.blocks());
-    if (blocks.length > 0) {
-      this.selectBlock(blocks[0].id);
+
+    // Select first block
+    if (blocks[0]?.id) {
+      this.selectedBlockId.set(blocks[0].id);
     }
-    
+
+    // Mark as dirty
+    this.isDirty.set(true);
+
     if (this.activePageId()) {
       blocks.forEach(b => {
         this.socketService.emitBlockAdded(this.activePageId()!, b);
       });
     }
-    
-    queueMicrotask(() =>
-      this.autoSave?.triggerSave('template'));
+
+    // Trigger auto-save after render
+    queueMicrotask(() => {
+      this.autoSave?.triggerSave(reason);
+    });
+
     return blocks.map(b => b.id);
   }
 

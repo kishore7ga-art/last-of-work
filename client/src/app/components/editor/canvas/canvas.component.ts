@@ -1,4 +1,4 @@
-import { Component, computed, inject, ChangeDetectionStrategy, OnDestroy, OnInit, signal, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, computed, inject, ChangeDetectionStrategy, OnDestroy, OnInit, signal, NgZone, ChangeDetectorRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   CdkDragDrop,
@@ -67,6 +67,16 @@ export class CanvasComponent implements OnInit, OnDestroy {
   store = inject(BuilderStore);
   environment = environment;
   private toastService = inject(ToastService);
+  isProduction = environment.production;
+
+  constructor() {
+    effect(() => {
+      // Read blocks to establish reactive dependency
+      const blocks = this.store.blocks();
+      console.log('Canvas: blocks changed to', blocks.length);
+      this.cdr.markForCheck();
+    });
+  }
 
   private componentRegistry = new Map<string, Type<any>>([
     ['text',        TextBlockComponent],

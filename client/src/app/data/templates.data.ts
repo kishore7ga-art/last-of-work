@@ -2194,7 +2194,7 @@ export const TEMPLATE_GROUPS: TemplateGroup[] = [
               },
               {
                 id: 'tpl-forms3-c3',
-                type: 'input',
+                type: 'form',
                 props: {
                   placeholder: 'your.name@company.com',
                   width: '320px',
@@ -2292,7 +2292,7 @@ export const TEMPLATE_GROUPS: TemplateGroup[] = [
               },
               {
                 id: 'tpl-forms5-c2',
-                type: 'input',
+                type: 'form',
                 props: {
                   placeholder: 'email@domain.com',
                   width: '260px',

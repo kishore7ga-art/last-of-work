@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, map, retry } from 'rxjs/operators';
+import { catchError, map, retry, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface PageSeo {
@@ -82,9 +82,31 @@ export class PageApiService {
 
   updatePage(id: string, data: any): Observable<Page> {
     this.cache.clear();
+    const cleaned = this.cleanPayload(data);
     return this.http
-      .put<any>(`${this.api}/pages/${id}`, data)
-      .pipe(map(r => r.page));
+      .put<any>(`${this.api}/pages/${id}`, cleaned)
+      .pipe(
+        map(r => r.page),
+        timeout(10000),
+        catchError(err => {
+          console.error('Update page failed:', err);
+          throw err;
+        })
+      );
+  }
+
+  private cleanPayload(obj: any): any {
+    if (Array.isArray(obj)) {
+      return obj.map(i => this.cleanPayload(i));
+    }
+    if (obj && typeof obj === 'object') {
+      return Object.fromEntries(
+        Object.entries(obj)
+          .filter(([_, v]) => v !== null && v !== undefined)
+          .map(([k, v]) => [k, this.cleanPayload(v)])
+      );
+    }
+    return obj;
   }
 
   deletePage(id: string): Observable<void> {

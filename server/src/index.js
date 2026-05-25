@@ -12,7 +12,13 @@ const path = require('path')
 const app = express()
 
 // Middleware
-app.use(compression())
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req, res) => {
+    return compression.filter(req, res)
+  }
+}))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 app.use(cors({
@@ -24,6 +30,12 @@ app.use(cors({
   credentials: true
 }))
 app.options('*', cors())
+
+// Set JSON Content-Type header for all API responses
+app.use('/api', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json')
+  next()
+})
 
 // Mock user middleware (no auth)
 app.use((req, res, next) => {

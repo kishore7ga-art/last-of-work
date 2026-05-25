@@ -24,6 +24,14 @@ export class TemplatesPanelComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
   private templateHtmlCache = new Map<string, SafeHtml>();
 
+  // Valid block types that have components
+  private readonly VALID_TYPES = new Set([
+    'text', 'heading', 'image', 'button',
+    'section', 'divider', 'spacer', 'video',
+    'columns', 'card', 'form', 'html',
+    'icon', 'map'
+  ]);
+
   hoveredId = signal<string | null>(null);
 
   // Search & Filters
@@ -164,70 +172,117 @@ export class TemplatesPanelComponent implements OnInit {
   }
 
   addTemplate(template: SectionTemplate): void {
-    if (!template?.blocks?.length) {
-      this.toast?.show(
-        'Template is empty', 'error');
+    if (!template) {
+      console.error('No template provided');
       return;
     }
 
-    const VALID_TYPES = new Set([
-      'text','heading','image','button',
-      'section','divider','spacer','video',
-      'columns','card','form','html',
-      'icon','map'
-    ]);
+    if (!template.blocks?.length) {
+      console.error('Template has no blocks:', template.name);
+      this.toast.show('Template is empty', 'error');
+      return;
+    }
 
-    const ts = Date.now();
-    const clone = (b: any, i: number): any => ({
-      ...b,
-      id: `${ts}-${i}-${Math.random()
-        .toString(36).slice(2,6)}`,
-      props: { ...(b.props || {}) },
-      animation: b.animation
-        ? { ...b.animation } : undefined,
-      visibility: {
-        desktop: true, mobile: true,
-        tablet: true
-      },
-      children: b.children?.map(
-        (c: any, ci: number) =>
-          clone(c, i * 100 + ci)
-      ) || []
+    const timestamp = Date.now();
+    let blockIndex = 0;
+
+    const cloneBlock = (originalBlock: any): CanvasBlock => {
+      blockIndex++;
+      const uniqueId =
+        `tpl-${timestamp}-${blockIndex}-` +
+        `${Math.random()
+          .toString(36)
+          .substring(2, 7)}`;
+
+      return {
+        id: uniqueId,
+        type: originalBlock.type,
+        props: {
+          ...(originalBlock.props || {})
+        },
+        animation: originalBlock.animation
+          ? { ...originalBlock.animation }
+          : undefined,
+        visibility: {
+          desktop: true,
+          mobile: true,
+          tablet: true
+        },
+        mobileProps: originalBlock.mobileProps
+          ? { ...originalBlock.mobileProps }
+          : null,
+        locked: false,
+        hidden: false,
+        children: Array.isArray(originalBlock.children)
+          ? originalBlock.children.map(cloneBlock)
+          : []
+      };
+    };
+
+    // Clone all blocks with new IDs
+    const clonedBlocks = template.blocks.map(cloneBlock);
+
+    // Filter to valid types only
+    const validBlocks = clonedBlocks.filter(b => {
+      const isValid = this.VALID_TYPES.has(b.type);
+      if (!isValid) {
+        console.warn(
+          `Template "${template.name}": ` +
+          `skipping unknown type "${b.type}". ` +
+          `Valid types: ` +
+          `${[...this.VALID_TYPES].join(', ')}`
+        );
+      }
+      return isValid;
     });
 
-    const blocks = template.blocks
-      .map((b, i) => clone(b, i))
-      .filter(b => {
-        if (!VALID_TYPES.has(b.type)) {
-          console.warn('Skip:', b.type);
-          return false;
-        }
-        return true;
-      });
-
-    if (!blocks.length) {
-      this.toast?.show(
-        'No valid blocks in template', 'error');
+    if (!validBlocks.length) {
+      const types = clonedBlocks.map(b => b.type).join(', ');
+      console.error(`All blocks invalid. Types: ${types}`);
+      this.toast.show(`Fix template block types: ${types}`, 'error');
       return;
     }
 
-    this.store.addMultipleBlocks(blocks);
+    console.log(
+      `Adding ${validBlocks.length} blocks`,
+      'from template:', template.name,
+      'types:', validBlocks.map(b => b.type)
+    );
+
+    // Add to store — triggers canvas re-render
+    this.store.addMultipleBlocks(validBlocks);
     this.trackRecent(template.id);
-    this.store.selectBlock(blocks[0].id);
 
-    setTimeout(() => {
-      document.getElementById(
-        'block-' + blocks[0].id
-      )?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }, 150);
-
-    this.toast?.show(
-      `✓ ${blocks.length} blocks added`,
+    // Show success
+    this.toast.show(
+      `✓ ${template.name} — ` +
+      `${validBlocks.length} blocks added`,
       'success'
     );
+
+    // Scroll to first block after render
+    setTimeout(() => {
+      const firstEl = document.getElementById('block-' + validBlocks[0].id);
+
+      if (firstEl) {
+        firstEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+        // Flash to show where blocks are
+        firstEl.style.outline = '3px solid #4f6ef7';
+        setTimeout(() => {
+          firstEl.style.outline = '';
+        }, 2000);
+      } else {
+        console.warn(
+          'Block not in DOM:',
+          'block-' + validBlocks[0].id,
+          '\nAll DOM blocks:',
+          document.querySelectorAll('[id^="block-"]').length
+        );
+      }
+    }, 300);
   }
 
   // Clear search bar

@@ -52,6 +52,13 @@
                   [id]="'block-' + block.id"
                   class="mobile-block">
                   
+                  <!-- Debug in dev mode -->
+                  @if (!isProduction) {
+                    <div class="dev-block-label">
+                      {{ block.type }} — {{ block.id }}
+                    </div>
+                  }
+                  
                   <app-block-wrapper
                     [block]="block"
                     [mbAnimate]="block.animation"
@@ -126,6 +133,13 @@
             [cdkDragData]="block"
             [id]="'block-' + block.id"
             class="block-drag-item">
+            
+            <!-- Debug in dev mode -->
+            @if (!isProduction) {
+              <div class="dev-block-label">
+                {{ block.type }} — {{ block.id }}
+              </div>
+            }
             
             <div *cdkDragPreview class="drag-preview">
               {{ block.type | titlecase }}
