@@ -551,14 +551,15 @@ export class BuilderStore {
   }
 
   loadBlocks(blocks: CanvasBlock[]): void {
-    this.history.set([this.cloneBlocks(blocks)]);
+    const sanitized = this.sanitizeBlocks(blocks);
+    this.history.set([this.cloneBlocks(sanitized)]);
     this.historyIndex.set(0);
-    this.blocks.set(blocks);
-    this.syncActivePageBlocks(blocks);
+    this.blocks.set(sanitized);
+    this.syncActivePageBlocks(sanitized);
   }
 
   loadPages(pages: BuilderPageTab[], activePageId?: string | null): void {
-    this.pages.set(pages.map(page => ({ ...page, blocks: this.cloneBlocks(page.blocks || []) })));
+    this.pages.set(pages.map(page => ({ ...page, blocks: this.sanitizeBlocks(this.cloneBlocks(page.blocks || [])) })));
     if (activePageId) {
       this.switchPage(activePageId);
     } else if (pages.length > 0) {
@@ -574,9 +575,10 @@ export class BuilderStore {
     this.pageTitle.set(page.title);
     this.pageSlug.set(page.slug);
     this.selectedBlockId.set(null);
-    this.history.set([this.cloneBlocks(page.blocks || [])]);
+    const sanitizedBlocks = this.sanitizeBlocks(page.blocks || []);
+    this.history.set([this.cloneBlocks(sanitizedBlocks)]);
     this.historyIndex.set(0);
-    this.blocks.set(this.cloneBlocks(page.blocks || []));
+    this.blocks.set(this.cloneBlocks(sanitizedBlocks));
   }
 
   addLocalPage(title: string, slug: string): BuilderPageTab {
@@ -634,12 +636,13 @@ export class BuilderStore {
   }
 
   handleRemoteBlockChange(updatedBlock: CanvasBlock): void {
+    const sanitizedBlock = this.sanitizeBlocks([updatedBlock])[0];
     const currentBlocks = this.blocks();
-    const blockIndex = currentBlocks.findIndex(b => b.id === updatedBlock.id);
+    const blockIndex = currentBlocks.findIndex(b => b.id === sanitizedBlock.id);
     if (blockIndex === -1) return;
 
     const newBlocks = [...currentBlocks];
-    newBlocks[blockIndex] = updatedBlock;
+    newBlocks[blockIndex] = sanitizedBlock;
     
     // Save to history but don't emit
     this.history.update(h => {
@@ -652,8 +655,9 @@ export class BuilderStore {
   }
 
   handleRemoteBlockAdded(block: CanvasBlock): void {
+    const sanitizedBlock = this.sanitizeBlocks([block])[0];
     const currentBlocks = this.blocks();
-    const newBlocks = [...currentBlocks, block];
+    const newBlocks = [...currentBlocks, sanitizedBlock];
     
     this.history.update(h => {
       const newH = [...h];
@@ -736,5 +740,48 @@ export class BuilderStore {
       this.customCss.set(settings.customCss || '');
       this.customJs.set(settings.customJs || '');
     }
+  }
+
+  private readonly TYPE_MAPPINGS: Record<string, string> = {
+    // Headers / text
+    'h1': 'heading', 'h2': 'heading', 'h3': 'heading', 'title': 'heading',
+    'subtitle': 'text', 'paragraph': 'text', 'p': 'text', 'label': 'text',
+    'description': 'text', 'text-block': 'text', 'richtext': 'text',
+
+    // Interactive
+    'btn': 'button', 'cta': 'button', 'link': 'button', 'anchor': 'button',
+    'cta-button': 'button',
+
+    // Media
+    'img': 'image', 'picture': 'image', 'photo': 'image', 'banner': 'image',
+    'youtube': 'video', 'embed': 'video', 'iframe': 'video',
+
+    // Layout
+    'hero': 'section', 'navbar': 'section', 'header': 'section', 'footer': 'section',
+    'wrapper': 'section', 'container': 'section', 'row': 'section', 'box': 'section',
+    'panel': 'section', 'grid': 'columns', 'col': 'columns', 'two-col': 'columns',
+    'three-col': 'columns', 'layout': 'columns', 'flex': 'columns',
+
+    // Form
+    'contact': 'form', 'input': 'form', 'email-form': 'form', 'subscribe': 'form',
+    'newsletter': 'form',
+
+    // Other
+    'hr': 'divider', 'line': 'divider', 'separator': 'divider',
+    'gap': 'spacer', 'empty': 'spacer', 'space': 'spacer',
+    'mp4': 'video'
+  };
+
+  private sanitizeBlocks(blocks: CanvasBlock[]): CanvasBlock[] {
+    if (!Array.isArray(blocks)) return [];
+    return blocks.map(block => {
+      const mappedType = this.TYPE_MAPPINGS[block.type] || block.type;
+      const sanitizedChildren = block.children ? this.sanitizeBlocks(block.children) : [];
+      return {
+        ...block,
+        type: mappedType as BlockType,
+        children: sanitizedChildren
+      };
+    });
   }
 }
