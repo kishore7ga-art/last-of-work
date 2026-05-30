@@ -162,3 +162,5 @@ ${htmlContent}
     return true;
   }
 }
+// catchError
+

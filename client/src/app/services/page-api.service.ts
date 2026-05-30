@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, retry, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
@@ -77,7 +77,13 @@ export class PageApiService {
     this.cache.clear();
     return this.http
       .post<any>(`${this.api}/pages`, data)
-      .pipe(map(r => r.page));
+      .pipe(
+        map(r => r.page),
+        catchError(err => {
+          console.error('createPage failed:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
   updatePage(id: string, data: any): Observable<Page> {
@@ -112,13 +118,24 @@ export class PageApiService {
   deletePage(id: string): Observable<void> {
     this.cache.clear();
     return this.http
-      .delete<void>(`${this.api}/pages/${id}`);
+      .delete<void>(`${this.api}/pages/${id}`)
+      .pipe(
+        catchError(err => {
+          console.error('deletePage failed:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
   publishPage(id: string): Observable<any> {
     this.cache.clear();
     return this.http.post<any>(
       `${this.api}/pages/${id}/publish`, {}
+    ).pipe(
+      catchError(err => {
+        console.error('publishPage failed:', err);
+        return throwError(() => err);
+      })
     );
   }
 
@@ -126,6 +143,11 @@ export class PageApiService {
     this.cache.clear();
     return this.http.post<any>(
       `${this.api}/pages/${id}/publish`, {}
+    ).pipe(
+      catchError(err => {
+        console.error('togglePublish failed:', err);
+        return throwError(() => err);
+      })
     );
   }
 
@@ -133,7 +155,13 @@ export class PageApiService {
     this.cache.clear();
     return this.http
       .post<any>(`${this.api}/pages/${id}/duplicate`, {})
-      .pipe(map(r => r.page));
+      .pipe(
+        map(r => r.page),
+        catchError(err => {
+          console.error('duplicatePage failed:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
   getVersions(id: string): Observable<any[]> {
@@ -149,13 +177,25 @@ export class PageApiService {
     this.cache.clear();
     return this.http
       .post<any>(`${this.api}/pages/${id}/versions/${versionId}/restore`, {})
-      .pipe(map(r => r.page));
+      .pipe(
+        map(r => r.page),
+        catchError(err => {
+          console.error('restoreVersion failed:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
   generateContent(prompt: string, context?: string): Observable<{ content: string }> {
     return this.http
       .post<any>(`${this.api}/pages/ai/generate`, { prompt, context })
-      .pipe(map(r => ({ content: r.content })));
+      .pipe(
+        map(r => ({ content: r.content })),
+        catchError(err => {
+          console.error('generateContent failed:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
   getPublishedPage(slug: string): Observable<Page> {

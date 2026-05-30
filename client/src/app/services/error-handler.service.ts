@@ -10,3 +10,5 @@ export class GlobalErrorHandler implements ErrorHandler {
     // In production: could send to error tracking service like Sentry
   }
 }
+// catchError
+

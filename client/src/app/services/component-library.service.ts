@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, catchError, of } from 'rxjs';
 import { SavedComponent, CanvasBlock } from '../store/builder.models';
 import { getApiBaseUrl } from '../config/api.config';
 
@@ -18,6 +18,12 @@ export class ComponentLibraryService {
 
   load(): void {
     this.http.get<{ success: boolean, components: SavedComponent[] }>(this.apiUrl)
+      .pipe(
+        catchError(err => {
+          console.error('Failed to load components:', err);
+          return of({ success: false, components: [] });
+        })
+      )
       .subscribe({
         next: (res) => {
           if (res.success) {
@@ -41,6 +47,10 @@ export class ComponentLibraryService {
           if (res.success) {
             this._components.update(comps => [res.component, ...comps]);
           }
+        }),
+        catchError(err => {
+          console.error('Failed to save component:', err);
+          return of({ success: false, component: null as any });
         })
       );
   }
@@ -50,6 +60,10 @@ export class ComponentLibraryService {
       .pipe(
         tap(() => {
           this._components.update(comps => comps.filter(c => (c as any)._id !== id && c.id !== id));
+        }),
+        catchError(err => {
+          console.error('Failed to delete component:', err);
+          return of({ success: false });
         })
       );
   }

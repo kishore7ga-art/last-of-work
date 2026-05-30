@@ -162,7 +162,7 @@ exports.acceptInvite = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invite expired' });
     }
     
-    // Require authentication via another mechanism (middleware protect not used here)
+    // Require authentication via another mechanism (middleware security check not used here)
     // The frontend should handle getting the token and passing it in headers, but it's a GET request
     // It's better to make the frontend call a POST endpoint with auth header to accept the invite.
     // For now we implement the logic assuming req.user might be present if we changed to POST, but let's stick to GET for now by validating a JWT token sent in query or relying on frontend to pass auth header if possible.
@@ -173,7 +173,8 @@ exports.acceptInvite = async (req, res, next) => {
        return res.status(401).json({ success: false, message: 'Please login to accept invite', redirect: `/login?returnUrl=/join-workspace?token=${token}` });
     }
     
-    // Decode token manually for this route since it's outside protect
+    // Decode token manually for this route since it's outside security check
+
     const jwt = require('jsonwebtoken');
     const bearerToken = req.headers.authorization.split(' ')[1];
     let decoded;

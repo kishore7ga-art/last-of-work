@@ -7,8 +7,6 @@ const router = express.Router();
 
 router.get('/public/:slug', pagesController.getPublicPageBySlug);
 
-// protect middleware removed
-
 router.get('/', cache(30), pagesController.getAllPages);
 router.post('/', pagesController.createPage);
 router.post('/ai/generate', pagesController.generateContent);

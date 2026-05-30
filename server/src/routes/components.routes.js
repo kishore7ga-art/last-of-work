@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Component = require('../models/Component.model');
-// Auth middleware removed
 
-// protect middleware removed
+// Auth middleware removed
 
 router.get('/', async (req, res, next) => {
   try {

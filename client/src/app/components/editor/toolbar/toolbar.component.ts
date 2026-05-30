@@ -27,7 +27,7 @@ import { CanvasComponent } from '../canvas/canvas.component';
           <div class="logo-icon">
             <lucide-icon name="layers" [size]="15"></lucide-icon>
           </div>
-          <span class="logo-text">MyBuilder</span>
+          <span class="logo-text">Build<span style="color:#4f6ef7">X</span></span>
         </div>
         
         <div class="toolbar-divider"></div>

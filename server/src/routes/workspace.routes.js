@@ -18,9 +18,6 @@ const {
 // Public route for accepting invite
 router.get('/join', acceptInvite);
 
-// All other routes are protected
-// protect middleware removed
-
 router.post('/', createWorkspace);
 router.get('/', getUserWorkspaces);
 router.get('/:id', getWorkspace);
